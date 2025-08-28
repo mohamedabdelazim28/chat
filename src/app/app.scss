@@ -1,0 +1,251 @@
+.app-container {
+  display: grid;
+  grid-template-areas:
+    "sidebar navbar navbar"
+    "sidebar chat-list chat-window";
+  grid-template-columns: 260px 320px 1fr;
+  grid-template-rows: 70px 1fr;
+  gap: 20px;
+  padding: 20px;
+  height: 100vh;
+  background: #f9f9f9;
+
+  app-sidebar {
+    grid-area: sidebar;
+
+  }
+
+  app-navbar {
+    grid-area: navbar;
+
+  }
+
+  app-chat-list {
+    grid-area: chat-list;
+
+  }
+
+  app-chat-window {
+    grid-area: chat-window;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    grid-template-areas:
+      "navbar"
+      "chat-list"
+      "chat-window";
+    grid-template-columns: 1fr;
+    grid-template-rows: 70px 1fr 1fr;
+  }
+
+  app-sidebar {
+    display: none;
+  }
+
+  app-navbar {
+    grid-area: navbar;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e0e0e0;
+    z-index: 1000;
+
+    app-navbar-logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    app-navbar-menu {
+      display: flex;
+      gap: 15px;
+    }
+    app-navbar-menu-item {
+      cursor: pointer;
+      color: #333;
+      text-decoration: none;
+      font-size: 1rem;
+      transition: color 0.3s;
+
+      &:hover {
+        color: #007bff;
+      }
+    }
+
+  }
+
+  app-chat-list {
+    grid-area: chat-list;
+  }
+
+  app-chat-window {
+    grid-area: chat-window;
+  }
+}
+
+/* ========== Desktop Default (≥ 1024px) ========== */
+.app-container {
+  display: grid;
+  grid-template-areas:
+    "sidebar navbar navbar"
+    "sidebar chat-list chat-window";
+  grid-template-columns: 260px 320px 1fr;
+  grid-template-rows: 70px 1fr;
+  height: 100vh;
+  
+}
+
+/* Sidebar */
+.sidebar {
+  grid-area: sidebar;
+  background: #fff;
+  border-right: 1px solid #ddd;
+}
+
+/* Navbar */
+.navbar {
+  grid-area: navbar;
+  background: #f8f9fa;
+  border-bottom: 1px solid #ddd;
+}
+
+/* Chat list */
+.chat-list {
+  grid-area: chat-list;
+  border-right: 1px solid #ddd;
+  overflow-y: auto;
+  background: #fff;
+}
+
+/* Chat window */
+.chat-window {
+  grid-area: chat-window;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ========== Tablet (768px – 1023px) ========== */
+@media (max-width: 1023px) {
+  .app-container {
+    grid-template-areas:
+      "navbar navbar"
+      "chat-list chat-window";
+    grid-template-columns: 280px 1fr;
+    grid-template-rows: 70px 1fr;
+  }
+
+  .sidebar {
+    display: none; /* إخفاء السايدبار */
+  }
+
+  .chat-list {
+    border-right: 1px solid #ddd;
+  }
+}
+
+.app-container {
+  display: grid;
+  grid-template-areas:
+    "sidebar navbar navbar"
+    "sidebar chat-list chat-window";
+  grid-template-columns: 260px 320px 1fr;
+  grid-template-rows: 70px 1fr;
+  height: 100vh;
+
+  .sidebar {
+    grid-area: sidebar;
+  }
+
+  .header {
+    grid-area: navbar;
+  }
+
+  .chat-list {
+    grid-area: chat-list;
+  }
+
+  .chat-window {
+    grid-area: chat-window;
+  }
+}
+
+.app-container {
+  display: grid;
+  grid-template-areas:
+    "sidebar navbar navbar"
+    "sidebar chat-list chat-window";
+  grid-template-columns: 260px 320px 1fr;
+  grid-template-rows: 70px 1fr;
+  height: 100vh;
+
+  .sidebar {
+    grid-area: sidebar;
+  }
+
+  .header {
+    grid-area: navbar;
+  }
+
+  .chat-list {
+    grid-area: chat-list;
+  }
+
+  .chat-window {
+    grid-area: chat-window;
+  }
+}
+
+/* 📱 Mobile */
+@media (max-width: 767px) {
+  .app-container {
+    grid-template-areas:
+      "chat-list";
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+  }
+
+  .sidebar,
+  .header,
+  .chat-window {
+    display: none;
+  }
+
+  .chat-list {
+    grid-area: chat-list;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* 📟 Tablet */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .app-container {
+    grid-template-areas:
+      "chat-list chat-window";
+    grid-template-columns: 320px 1fr;
+    grid-template-rows: 1fr;
+  }
+
+  .sidebar,
+  .header {
+    display: none;
+  }
+
+  .chat-list {
+    grid-area: chat-list;
+  }
+
+  .chat-window {
+    grid-area: chat-window;
+  }
+}
+

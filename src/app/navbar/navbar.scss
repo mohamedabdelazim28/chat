@@ -1,0 +1,139 @@
+.header {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    width: 100%;
+    padding: 6px;
+    margin-top: -10px;
+    margin-left: -10px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 10;
+    justify-content: space-between;
+    height: 50px;
+    gap: 5px;
+
+
+    .greeting {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+
+      .greeting-icon {
+        width: 32px;
+        height: 32px;
+        background-color: #ff9800;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        margin-right: 8px;
+      }
+
+      span {
+        font-size: 16px;
+        color: #333;
+      }
+    }
+
+    .search-container {
+      position: relative;
+
+      .search-input {
+        width: 646px;
+        padding: 14px;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 12px;
+        letter-spacing: -0.41px;
+
+        .search-input:focus {
+          border-color: #1976d2;
+        }
+
+        &::placeholder {
+          color: #88888C;
+          font-size: 12px;
+          letter-spacing: -0.41px;
+          padding-left: 20px;
+        }
+
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        width: 16px;
+        height: 16px;
+        color: #88888C;
+      }
+    }
+
+
+
+    .icons {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      width: 190px;
+
+      .plus-icon,
+      .messages-icon,
+      .notifications-icon,
+      .settings-icon {
+        font-size: 20px;
+        color: #092E40;
+      }
+
+      & .plus-icon:hover,
+      & .messages-icon:hover,
+      & .notifications-icon:hover,
+      & .settings-icon:hover {
+        color: #1976d2;
+        cursor: pointer;
+      }
+    }
+  }
+
+  .navbar {
+  grid-area: navbar;
+  height: 60px;
+  border-bottom: 1px solid #e5e5e5;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+
+  .search-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+
+    .search-icon {
+      margin-right: 0.5rem;
+    }
+
+    .search-input {
+      flex: 1;
+      height: 2.5rem;
+      border: none;
+      border-radius: 0.25rem;
+      padding: 0.5rem;
+    }
+  }
+
+}
+.header {
+  grid-area: navbar;
+}
+@media (max-width: 1230px) {
+  .header {
+    display: none;
+  }
+}

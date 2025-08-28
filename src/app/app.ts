@@ -1,12 +1,21 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component } from '@angular/core';
+import { SidebarComponent } from './sidebar/sidebar';
+import { ChatListComponent } from './chat-list/chat-list';
+import { ChatWindow } from './chat-window/chat-window';
+import { Navbar } from './navbar/navbar';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  standalone: true,
+  imports: [
+    CommonModule,
+    SidebarComponent,
+    ChatListComponent,
+    ChatWindow,
+    Navbar
+  ],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrls: ['./app.scss']
 })
-export class App {
-  protected readonly title = signal('chat');
-}
+export class AppComponent {}

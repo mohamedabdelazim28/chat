@@ -1,0 +1,59 @@
+<div class="chat-list">
+  <div class="chat-section">
+    <div class="header">
+      <h2>Chats</h2>
+    </div>
+
+    <div class="search-container">
+      <input
+        type="text"
+        placeholder="Search..."
+        class="search-input"
+        [(ngModel)]="searchTerm">
+      <i class="search-icon"></i>
+    </div>
+
+    <div class="filter-tabs">
+      <button
+        class="tab"
+        [class.active]="activeFilter === 'all'"
+        (click)="setFilter('all')">All</button>
+
+      <button
+        class="tab"
+        [class.active]="activeFilter === 'unread'"
+        (click)="setFilter('unread')">Unread</button>
+
+      <button
+        class="tab"
+        [class.active]="activeFilter === 'groups'"
+        (click)="setFilter('groups')">Groups</button>
+    </div>
+
+    <div class="conversations">
+      @for (chat of filterChats((conversations$ | async) ?? []); track chat.userId) {
+        <div class="conversation-item">
+          <div class="avatar">
+            <img [src]="chat.photo" alt="Avatar" class="avatar-image">
+          </div>
+          <div class="conversation-content">
+            <div class="conversation-header">
+              <span class="name">{{ chat.name }}</span>
+              <span class="time">{{ chat.lastMessageTime | date:'shortTime' }}</span>
+            </div>
+            <div class="message-preview">{{ chat.lastMessage }}</div>
+          </div>
+
+
+          <div class="total-count">
+            {{ chat.totalCount }}
+          </div>
+
+          <div class="unread-badge" *ngIf="chat.unreadCount > 0">
+            {{ chat.unreadCount }}
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

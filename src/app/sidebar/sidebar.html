@@ -1,0 +1,24 @@
+<div class="sidebar">
+  <div class="logo">
+    <img src="assets/imges/Arise Organization Logo (1)-01 1.svg" alt="ARISE" class="logo-img">
+  </div>
+
+  <nav class="nav-menu">
+    <div *ngFor="let item of menuItems" class="nav-item" [class.active]="item.active">
+      <mat-icon>{{item.icon}}</mat-icon>
+      <span>{{item.label}}</span>
+    </div>
+  </nav>
+
+  <div class="user-profile">
+    <div class="avatar">
+    <img src="{{currentUser.avatar}}" alt="{{currentUser.name}}"  class="user-avatar">
+    <span class="user-name">{{currentUser.name}}</span>
+    </div>
+    <div class="logout">
+     <mat-icon class="logout-icon">logout</mat-icon>
+     <p>Logout</p>
+     </div>
+  </div>
+
+</div>

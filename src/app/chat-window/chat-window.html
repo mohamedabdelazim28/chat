@@ -1,0 +1,110 @@
+<div class="chat-window">
+  <!-- Header -->
+  <div class="chat-window-header">
+    <div class="contact-info">
+      <div class="contact-avatar">
+        <img src="assets/imges/Avatar.svg" alt="Ronald Richards" />
+      </div>
+      <div class="contact-details">
+        <div class="contact-name">Ronald Richards</div>
+        <div class="contact-status">Last seen 6:00 pm</div>
+      </div>
+    </div>
+    <div class="chat-actions">
+      <button class="action-btn"><mat-icon>search</mat-icon></button>
+      <button class="action-btn">⋯</button>
+    </div>
+  </div>
+
+
+  <div class="chat-messages">
+    <div *ngFor="let msg of messages"
+         class="message"
+         [ngClass]="{ 'my-message': msg.sender === 'You', 'other-message': msg.sender !== 'You' }">
+
+      <div class="avatar" *ngIf="msg.sender !== 'You'">
+        <img [src]="msg.avatar" alt="Avatar" />
+      </div>
+
+      <div class="msg-content">
+
+        <div *ngIf="!msg.type || msg.type === 'text'" class="text">
+          {{ msg.content }}
+          <div class="time">{{ msg.time }}</div>
+        </div>
+
+        <div *ngIf="msg.type === 'audio'" class="audio-message">
+          <audio controls [src]="msg.content"></audio>
+          <div class="time">{{ msg.time }}</div>
+        </div>
+
+        <div *ngIf="msg.type === 'image'" class="image-message">
+          <img [src]="msg.content" alt="Uploaded Image" />
+          <div class="time">{{ msg.time }}</div>
+        </div>
+
+        <div *ngIf="msg.type === 'file'" class="file-message">
+          <mat-icon>insert_drive_file</mat-icon>
+          <span>{{ msg.content }}</span>
+          <div class="time">{{ msg.time }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-input-container">
+
+    <div class="attachment">
+      <button class="attachment-btn" (click)="toggleAttachmentMenu()">
+        <mat-icon>add</mat-icon>
+      </button>
+
+      <div *ngIf="showAttachmentMenu" class="attachment-menu">
+        <button (click)="triggerFileInput('image/*')">
+          <mat-icon>image</mat-icon> Image
+        </button>
+        <button (click)="triggerFileInput('*')">
+          <mat-icon>attach_file</mat-icon> File
+        </button>
+      </div>
+
+      <input
+        #fileInput
+        type="file"
+        (change)="handleFileUpload($event)"
+        style="display: none"
+      />
+    </div>
+
+    <div class="emoji">
+      <button class="emoji-btn" (click)="toggleEmojiPicker()">
+        <mat-icon>mood</mat-icon>
+      </button>
+
+      <div *ngIf="showEmojiPicker" class="emoji-picker">
+        <emoji-mart (emojiSelect)="addEmoji($event)" title="Pick an emoji" set="apple"></emoji-mart>
+      </div>
+    </div>
+
+    <div class="chat-input">
+      <input
+        type="text"
+        [(ngModel)]="messageInput"
+        placeholder="Write a message"
+        class="message-input"
+      />
+    </div>
+
+    <!-- Record Button -->
+    <button class="record-btn"
+      (mousedown)="startRecording()"
+      (mouseup)="stopRecording()"
+      (touchstart)="startRecording()"
+      (touchend)="stopRecording()">
+      <mat-icon>{{ isRecording ? 'stop' : 'mic' }}</mat-icon>
+    </button>
+
+    <!-- Send Button -->
+    <button class="send-btn" (click)="sendMessage()">➤</button>
+  </div>
+</div>
