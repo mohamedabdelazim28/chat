@@ -11,7 +11,7 @@ interface ChatPreview {
   lastMessage: string;
   lastMessageTime: Date;
   unreadCount: number;
-  totalCount: number; // 👈 جديد
+  totalCount: number; 
 }
 
 @Component({
