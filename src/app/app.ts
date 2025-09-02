@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
 import { SidebarComponent } from './sidebar/sidebar';
 import { ChatListComponent } from './chat-list/chat-list';
-import { ChatWindow } from './chat-window/chat-window';
 import { Navbar } from './navbar/navbar';
 import { CommonModule } from '@angular/common';
+import { ChatWindowcomponent } from './chat-window/chat-window';
 
 @Component({
   selector: 'app-root',
@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
     CommonModule,
     SidebarComponent,
     ChatListComponent,
-    ChatWindow,
+    ChatWindowcomponent,
     Navbar
   ],
   templateUrl: './app.html',

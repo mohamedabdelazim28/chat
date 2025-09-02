@@ -17,7 +17,8 @@
   </div>
 
 
-  <div class="chat-messages">
+  <div class="chat-messages" >
+
     <div *ngFor="let msg of messages"
          class="message"
          [ngClass]="{ 'my-message': msg.sender === 'You', 'other-message': msg.sender !== 'You' }">
