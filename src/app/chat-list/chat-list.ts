@@ -112,12 +112,11 @@ export class ChatListComponent implements OnInit {
 
 
           (res?.data ?? []).forEach((msg: any) => {
-            // console.log(msg.body);
-            const userId = msg.fromUser.id;
+            const userId = msg.user.id;
             if (!grouped.has(userId)) {
               grouped.set(userId, {
                 userId,
-                name: `${msg.fromUser.firstName} ${msg.fromUser.lastName}`,
+                name: `${msg.user.firstName} ${msg.user.lastName}`,
                 photo: msg.fromUser.photo,
                 body: msg.body,
                 lastMessage: msg.body,
@@ -142,15 +141,13 @@ export class ChatListComponent implements OnInit {
               if (!msg.isReaded) existing.unreadCount += 1;
               existing.totalCount += 1;
             }
-
-            console.log(grouped);
           });
 
           const apiChats = Array.from(grouped.values());
 
           this.chatService.setMessages([...apiChats]); //, ...this.messages
 
-          return [...apiChats];//https://meet.google.com/mcz-nvre-tyw;
+          return [...apiChats];
 
         })
       )
@@ -220,6 +217,7 @@ export class ChatListComponent implements OnInit {
   }
 
   selectChat(userId: number): void {
+    console.log(userId)
     this.chatService.setSelectedUser(userId);
   }
 }

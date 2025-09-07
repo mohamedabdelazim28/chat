@@ -15,7 +15,7 @@
     </div>
   </div>
 
-  <div class="chat-messages">
+  <div class="chat-messages" *ngIf="(myMessages$ | async)?.length">
     <div
       *ngFor="let msg of messages"
       class="message"

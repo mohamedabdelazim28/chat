@@ -7,6 +7,7 @@ export interface ChatThread {
   name: string;
   photo: string;
   body: string;
+  message?:string;
   lastMessage: string;
   messages: any[];
   lastMessageTime: Date;
@@ -37,7 +38,7 @@ export class ChatService {
 
   private http = inject(HttpClient);
   private baseURL = 'https://devbe.ariseorganization.com';
-  private jwtToken = 'Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoic2FtaXJhIGhhc3NhbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiNTM0IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic2FtaXJhaGFzc2FubjQ0QGdtYWlsLmNvbSIsInVpZCI6IjUzNCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkZhbWlseSBNZW1iZXIiLCJleHAiOjE3NTcyNzIyNjcsImlzcyI6IklkZW50aXR5IiwiYXVkIjoiSWRlbnRpdHlVc2VyIn0.DiIBoJEyoiEw04e18F_zJMBiQpHvS7H7dCcMkWdrEd0';
+  private jwtToken = "Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoic2FtaXJhIGhhc3NhbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiNTM0IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic2FtaXJhaGFzc2FubjQ0QGdtYWlsLmNvbSIsInVpZCI6IjUzNCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkZhbWlseSBNZW1iZXIiLCJleHAiOjE3NTcyODAwNTEsImlzcyI6IklkZW50aXR5IiwiYXVkIjoiSWRlbnRpdHlVc2VyIn0.NnzVL_eaUsIct1_kB5N82bVt02PRCaM04OGo21k733M"
 
   conversations: any[] = [];
 
@@ -79,7 +80,6 @@ export class ChatService {
     return this.SelectedUserId.pipe(
       map((userId) => {
         const messages = this.allMessages.find((c) => c.userId === userId)?.messages;
-        console.log('messages', this.allMessages, userId);
         return messages ?? [];
       })
     );
@@ -87,7 +87,6 @@ export class ChatService {
 
   setSelectedUser(UserId: number) {
     this.SelectedUserId.next(UserId);
-    console.log(UserId);
   }
 
   setMessages(messages: ChatThread[]) {
