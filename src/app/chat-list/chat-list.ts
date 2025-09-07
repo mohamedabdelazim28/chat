@@ -15,7 +15,7 @@ export class ChatListComponent implements OnInit {
   chats: ChatThread[] = [];
   displayedChats: ChatThread[] = [];
   totalRecords = 0;
-  limit = 10;
+  limit = 100;
   page = 1;
   isLoading = false;
 
@@ -23,68 +23,74 @@ export class ChatListComponent implements OnInit {
   searchTerm: string = '';
 
 
-  messages: ChatThread[] = [
-    {
-      lastMessage: 'test message 1',
-      messages: [],
-      lastMessageTime: new Date('2025-08-25T15:42:01Z'),
-      name: 'User 1',
-      photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
-      totalCount: 1,
-      unreadCount: 1,
-      userId: 601
-    },
-    {
-      lastMessage: 'test message 2',
-      messages: [],
-      lastMessageTime: new Date('2025-08-25T15:42:02Z'),
-      name: 'User 2',
-      photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
-      totalCount: 2,
-      unreadCount: 0,
-      userId: 602
-    },
-    {
-      lastMessage: 'test message 3',
-      messages: [],
-      lastMessageTime: new Date('2025-08-25T15:42:03Z'),
-      name: 'User 3',
-      photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
-      totalCount: 3,
-      unreadCount: 5,
-      userId: 603
-    },
-    {
-      lastMessage: 'test message 4',
-      messages: [],
-      lastMessageTime: new Date('2025-08-25T15:42:04Z'),
-      name: 'User 4',
-      photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
-      totalCount: 4,
-      unreadCount: 1,
-      userId: 604
-    },
-    {
-      lastMessage: 'test message 5',
-      messages: [],
-      lastMessageTime: new Date('2025-08-25T15:42:05Z'),
-      name: 'User 5',
-      photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
-      totalCount: 5,
-      unreadCount: 0,
-      userId: 605
-    },
-    {
-      lastMessage: 'test message 6',
-      messages: [],
-      lastMessageTime: new Date('2025-08-25T15:42:06Z'),
-      name: 'User 6',
-      photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
-      totalCount: 6,
-      unreadCount: 1,
-      userId: 606
-    }
-  ];
+  // messages: ChatThread[] = [
+  //   {
+  //     lastMessage: 'test message 1',
+  //     body: 'test message 1',
+  //     messages: [],
+  //     lastMessageTime: new Date('2025-08-25T15:42:01Z'),
+  //     name: 'User 1',
+  //     photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
+  //     totalCount: 1,
+  //     unreadCount: 1,
+  //     userId: 601
+  //   },
+  //   {
+  //     lastMessage: 'test message 2',
+  //     body: 'test message 2',
+  //     messages: [],
+  //     lastMessageTime: new Date('2025-08-25T15:42:02Z'),
+  //     name: 'User 2',
+  //     photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
+  //     totalCount: 2,
+  //     unreadCount: 0,
+  //     userId: 602
+  //   },
+  //   {
+  //     lastMessage: 'test message 3',
+  //     body: 'test message 3',
+  //     messages: [],
+  //     lastMessageTime: new Date('2025-08-25T15:42:03Z'),
+  //     name: 'User 3',
+  //     photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
+  //     totalCount: 3,
+  //     unreadCount: 5,
+  //     userId: 603
+  //   },
+  //   {
+  //     lastMessage: 'test message 4',
+  //     body: 'test message 4',
+  //     messages: [],
+  //     lastMessageTime: new Date('2025-08-25T15:42:04Z'),
+  //     name: 'User 4',
+  //     photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
+  //     totalCount: 4,
+  //     unreadCount: 1,
+  //     userId: 604
+  //   },
+  //   {
+  //     lastMessage: 'test message 5',
+  //     body: 'test message 5',
+  //     messages: [],
+  //     lastMessageTime: new Date('2025-08-25T15:42:05Z'),
+  //     name: 'User 5',
+  //     photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
+  //     totalCount: 5,
+  //     unreadCount: 0,
+  //     userId: 605
+  //   },
+  //   {
+  //     lastMessage: 'test message 6',
+  //     body: 'test message 6',
+  //     messages: [],
+  //     lastMessageTime: new Date('2025-08-25T15:42:06Z'),
+  //     name: 'User 6',
+  //     photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
+  //     totalCount: 6,
+  //     unreadCount: 1,
+  //     userId: 606
+  //   }
+  // ];
 
   private chatService = inject(ChatService);
   constructor(private cdr: ChangeDetectorRef) { }
@@ -113,6 +119,7 @@ export class ChatListComponent implements OnInit {
                 userId,
                 name: `${msg.fromUser.firstName} ${msg.fromUser.lastName}`,
                 photo: msg.fromUser.photo,
+                body: msg.body,
                 lastMessage: msg.body,
                 messages: [msg],
                 lastMessageTime: new Date(msg.createdOn),
@@ -141,9 +148,9 @@ export class ChatListComponent implements OnInit {
 
           const apiChats = Array.from(grouped.values());
 
-          this.chatService.setMessages([...apiChats, ...this.messages]);
+          this.chatService.setMessages([...apiChats]); //, ...this.messages
 
-          return [...apiChats, ...this.messages];
+          return [...apiChats];//https://meet.google.com/mcz-nvre-tyw;
 
         })
       )
@@ -165,7 +172,7 @@ export class ChatListComponent implements OnInit {
         error: (err) => {
           console.error('Error loading conversations:', err);
           if (!this.chats.length) {
-            this.chats = [...this.messages];
+            // this.chats = [...this.messages];
             this.displayedChats = this.filterChats(this.chats);
             this.cdr.detectChanges();
           }
