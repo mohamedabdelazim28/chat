@@ -4,6 +4,8 @@
       <h2>Chats</h2>
     </div>
 
+
+
     <div class="search-container">
       <input
         type="text"
@@ -30,6 +32,8 @@
         (click)="setFilter('groups')">Groups</button>
     </div>
 
+
+
     <!-- Conversations list -->
     <div class="conversations" (scroll)="onScroll($event)" style="height:400px; overflow-y:auto;">
       <div *ngFor="let chat of displayedChats; " class="conversation-item" (click)="selectChat(chat.userId)">
@@ -39,18 +43,13 @@
         </div>
         <div class="conversation-content">
           <div class="conversation-header">
-            <span class="name">{{ chat.name }}</span>
-            <span class="time">{{ chat.lastMessageTime | date:'shortTime' }}</span>
+            <span class="name">{{ chat.firstName }} {{ chat.lastName }}</span>
+            <span class="time">{{ chat.sendDate | date:'shortTime' }}</span>
           </div>
-          <div class="message-preview">{{ chat.lastMessage }}</div>
+          <div class="message-preview">{{ chat.message }}</div>
         </div>
-        <span class="badge" *ngIf="chat.unreadCount > 0">{{ chat.unreadCount }}</span>
+        <span class="badge" *ngIf="chat.numberOfUnread > 0">{{ chat.numberOfUnread }}</span>
         </ng-container>
-      </div>
-
-
-      <div *ngIf="isLoading && displayedChats.length > 0" class="loading" >
-        Loading ...
       </div>
     </div>
 

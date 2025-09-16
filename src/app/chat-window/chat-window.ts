@@ -1,27 +1,38 @@
-import { ChatService, ChatThread } from './../services/chat-service';
-import { Component, ElementRef, inject, OnInit, ViewChild, HostListener } from '@angular/core';
+import { ChatService, ChatThread  } from './../services/chat-service';
+import { Component, ElementRef, inject, OnInit, ViewChild, HostListener, Input, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
-import { PickerComponent } from '@ctrl/ngx-emoji-mart';
 import { map, Observable } from 'rxjs';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 type UiChatThread = ChatThread & {
+  messageId?: number;
   showMenu?: boolean;
   menuOpen?: boolean;
   showReactions?: boolean;
-  reaction?: string;
   isEditing?: boolean;
   editBody?: string;
   msgId?: string;
   messages?: any[];
   voiceMessages?: any[];
+  sender?: string;
+  content?: string;
+  time?: string;
+  avatar?: string;
+  type?: string;
+  name?: string;
+  body?: string;
+  reactions?: any[];
+  confirmDelete?: boolean;
+  deletedForEveryone?: boolean;
+  deletedForMe?: boolean;
 };
 
 @Component({
   selector: 'app-chat-window',
   standalone: true,
-  imports: [CommonModule, MatIconModule, FormsModule, PickerComponent],
+  imports: [CommonModule, MatIconModule, FormsModule],
   templateUrl: './chat-window.html',
   styleUrls: ['./chat-window.scss'],
 })
@@ -29,110 +40,120 @@ export class ChatWindowcomponent implements OnInit {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
   private ChatService = inject(ChatService);
-  private OutgoingMessages: ChatThread[] = [];
   private SelectedUserId = this.ChatService.SelectedUserId;
-  private selectedChatMessages: any[] = [];
-  myMessages$!: Observable<ChatThread[]>;
+  myMessages$;
   public messages: any[] = [];
+  public myUserId = 534;
+  constructor(private cdr: ChangeDetectorRef, private sanitizer: DomSanitizer) { }
 
 
-  kkk = [
-    {
-      sender: 'Ronald Richards',
-      content: 'Hey friend! last using Arise app',
-      time: '2m',
-      avatar: 'assets/imges/Avatar.svg',
-      type: 'text',
-    },
-    {
-      sender: 'You',
-      content: 'Hello Ronald!',
-      time: '1m',
-      avatar: 'assets/imges/Ellipse 514.svg',
-      type: 'text',
-    },
-    {
-      sender: 'Ronald Richards',
-      content: 'Thank you for being here ❤️',
-      time: '15m',
-      avatar: 'assets/imges/Avatar.svg',
-      type: 'text',
-    }
-  ]
+
+  availableReactions: any[] = [];
+
+  @Input() selectedChatId: string | null = null;
+
   ngOnInit(): void {
 
-    this.ChatService.GetUserOutgoingMessages(10, 1).subscribe((messages) => {
-
-      if (messages.data) {
-
-        this.OutgoingMessages = [...messages.data];
-        this.myMessages$ = this.SelectedUserId.pipe(
-          map((userId) => {
-            console.log(userId)
-            return userId
-              ? this.OutgoingMessages
-                .filter((c) => c.userId === userId)
-                .map((c) => ({
-                  ...(c as ChatThread),
-                  sender: 'You',
-                  body: c.message ?? '',
-                }))
-              : []
-          }
-          )
-        );
-      }
-
-        let updatedMessages: ChatThread[] = [];
-        this.ChatService.getUserChatsById().subscribe((msgs: ChatThread[]) => {
-          console.log('msgs::',msgs)
-          this.selectedChatMessages = [...msgs];
-          updatedMessages = this.selectedChatMessages.map((c) => ({
-            ...c,
-            sender: c.fromUser.firstName + ' ' + c.fromUser.lastName,
-          }));
-          this.myMessages$?.subscribe((res) => {
-            console.log(...res)
-            this.messages = [...updatedMessages, ...res];
-          });
-       });
+    this.ChatService.getAllReactions().subscribe({
+      next: (res: any) => {
+        console.log('Reactions API response', res)
+        this.availableReactions = res.data;
+      },
+      error: (err) => console.log('Error fetching reactions', err)
     });
+
+
+
+
+    console.log('SelectedUserId', this.SelectedUserId)
+
+    this.SelectedUserId
+      .subscribe((userId) => {
+        console.log('userid', userId)
+        this.messages = [];
+        if (userId) {
+          this.ChatService.getChatByUserId(userId as number)
+            .pipe(
+              map((res: any) => {
+                console.log('res', res)
+                return res.data.map((msg: any) => {
+                  console.log('msg', msg)
+                  return {
+                    messageId: msg.messageId ?? msg.id,
+                    sender: msg.fromUser.id === this.myUserId ? 'You' : msg.fromUser.firstName + ' ' + msg.fromUser.lastName,
+                    content: msg.body,
+                    time: msg.createdOn,
+                    avatar: msg.fromUser.photo,
+                    type: "text",
+                  };
+
+                })
+              }
+
+              )
+            ).subscribe({
+              next: (msgs: any[]) => {
+                this.messages = [...msgs, ...this.messages];
+                console.log('this.messages', this.messages)
+                this.cdr.detectChanges();
+              },
+              error: (err) => {
+                console.error('Error loading conversations:', err);
+              }
+
+            })
+        }
+      })
+
   }
 
   messageInput: string = '';
   showEmojiPicker: boolean = false;
   showAttachmentMenu: boolean = false;
+  safeMessage: SafeHtml = '';
+  safecontent: SafeHtml = '';
+  messageEmoji: string = '';
+  emojiInput: string = '';
 
   // Emoji
   toggleEmojiPicker() {
     this.showEmojiPicker = !this.showEmojiPicker;
   }
-  addEmoji(event: any) {
-    this.messageInput += event.emoji.native;
+  addEmoji(reaction: any) {
+    this.messageEmoji = `<img src="${reaction.icon}" width="20" height="20"/>`;
+
+    console.log("reaction", reaction);
+    this.updateSafeMessage();
     this.showEmojiPicker = false;
+    this.emojiInput = reaction.id
   }
 
+  updateSafeMessage() {
+    this.safeMessage = this.sanitizer.bypassSecurityTrustHtml(this.messageEmoji);
+  }
 
   sendMessage() {
-    if (this.messageInput.trim()) {
+    if (this.messageInput.trim() || this.messageEmoji) {
       const payload = {
         userId: this.SelectedUserId.value ?? 694,
         body: this.messageInput,
         voiceFileId: null,
         attachmentId: null,
         groupId: null,
-        messageCode: new Date().getTime().toString(),
+        messageCode: this.emojiInput ?? "",
       };
 
       this.ChatService.sendNewMessage(payload).subscribe({
         next: () => {
-          const newMsg: UiChatThread = {
+          this.safecontent = this.sanitizer.bypassSecurityTrustHtml(this.messageEmoji);
+          const newMsg = {
+            messageId: Date.now(),
             userId: payload.userId,
             sender: 'You',
             name: 'You',
             photo: 'assets/imges/Ellipse 514.svg',
-            body: this.messageInput,
-            lastMessage: this.messageInput,
+            content: this.messageInput + this.sanitizer.bypassSecurityTrustHtml(this.messageEmoji),
+            message: "",
             messages: [
               {
                 userId: payload.userId,
@@ -150,7 +171,7 @@ export class ChatWindowcomponent implements OnInit {
             msgId: Date.now().toString() + '_' + Math.random().toString(36).slice(2),
           };
 
-          this.messages = [...this.messages, newMsg];
+          this.messages = [newMsg, ...this.messages];
           this.messageInput = '';
           console.log('window' + this.messages);
         },
@@ -175,12 +196,12 @@ export class ChatWindowcomponent implements OnInit {
     const file = event.target.files[0];
     if (file) {
       const fileUrl = URL.createObjectURL(file);
-      const base: Partial<UiChatThread> = {
+      const base = {
         userId: 694,
         sender: 'You',
         name: 'You',
         photo: 'assets/imges/Ellipse 514.svg',
-        lastMessageTime: new Date(),
+        createdOn: new Date(),
         unreadCount: 0,
         totalCount: 1,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -202,7 +223,7 @@ export class ChatWindowcomponent implements OnInit {
             },
           ],
           type: 'image',
-        } as UiChatThread);
+        });
       } else {
         this.messages.push({
           ...base,
@@ -218,7 +239,7 @@ export class ChatWindowcomponent implements OnInit {
             },
           ],
           type: 'file',
-        } as UiChatThread);
+        });
       }
     }
   }
@@ -227,7 +248,7 @@ export class ChatWindowcomponent implements OnInit {
   mediaRecorder: any;
   audioChunks: any[] = [];
   isRecording: boolean = false;
-  voiceMessages: UiChatThread[] = [];
+  voiceMessages: any[] = [];
 
   async startRecording() {
     try {
@@ -250,13 +271,13 @@ export class ChatWindowcomponent implements OnInit {
         const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm;codecs=opus' });
         const audioUrl = URL.createObjectURL(audioBlob);
 
-        const base: UiChatThread = {
+        const base = {
           userId: 694,
           sender: 'You',
           name: 'You',
           photo: 'assets/imges/Ellipse 514.svg',
           body: audioUrl,
-          lastMessage: '[Voice Message]',
+          message: '[Voice Message]',
           messages: [
             {
               userId: 694,
@@ -266,12 +287,11 @@ export class ChatWindowcomponent implements OnInit {
               photo: 'assets/imges/Ellipse 514.svg',
             },
           ],
-          lastMessageTime: new Date(),
+          createdOn: new Date(),
           unreadCount: 0,
           totalCount: 1,
           type: 'audio',
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          msgId: Date.now().toString() + '_' + Math.random().toString(36).slice(2),
         };
 
         this.voiceMessages.push(base);
@@ -299,7 +319,9 @@ export class ChatWindowcomponent implements OnInit {
     }
   }
 
-
+  get reversedMessages() {
+    return [...this.messages].reverse();
+  }
 
   @HostListener('document:click', ['$event'])
   clickOutside(event: Event) {
@@ -339,34 +361,82 @@ export class ChatWindowcomponent implements OnInit {
 
   saveEdit(msg: UiChatThread) {
     if (typeof msg.editBody === 'string') {
+
       msg.body = msg.editBody;
+
       if (Array.isArray(msg.messages) && msg.messages.length) {
         const last = msg.messages[msg.messages.length - 1];
         if (last && (!last.type || last.type === 'text')) {
           last.body = msg.editBody;
         }
       }
+
+      msg.isEditing = false;
+      this.ChatService.editMessage(Number(msg.messageId), msg.editBody).subscribe({
+        next: (res: any) => {
+          console.log('Message updated on server', res);
+        },
+        error: (err) => {
+          console.error('Error updating message:', err);
+
+        }
+      });
     }
-    msg.isEditing = false;
   }
+
 
   cancelEdit(msg: UiChatThread) {
     msg.isEditing = false;
     msg.editBody = msg.body;
   }
 
-  deleteMessage(msg: UiChatThread) {
-    this.messages = this.messages.filter((m) => m.msgId !== msg.msgId);
-  }
+  deleteTarget: UiChatThread | null = null;
 
+  confirmDelete(msg: any, type: 'everyone' | 'me') {
+    if (type === 'everyone') {
+      this.ChatService.deleteMessage(msg.messageId).subscribe({
+        next: () => {
+          msg.deletedForEveryone = true;
+          msg.deletedForMe = false;
+          msg.content = ''; // نخفي الرسالة الأصلية
+        }
+      });
+    } else if (type === 'me') {
+      this.ChatService.deleteForMe(msg.messageId).subscribe({
+        next: () => {
+          msg.deletedForMe = true;
+          msg.deletedForEveryone = false;
+          msg.content = ''; // نخفي الرسالة الأصلية
+        }
+      });
+    }
+    msg.confirmDelete = false;
+  }
   openReactions(msg: UiChatThread, event: Event) {
     event.stopPropagation();
     this.closeAllMenus();
     msg.showReactions = true;
   }
 
-  setReaction(msg: UiChatThread, reaction: string) {
-    msg.reaction = reaction;
-    msg.showReactions = false;
+  setReaction(msg: UiChatThread, reaction: any) {
+    console.log(">>> setReaction msg:", msg);
+    console.log(">>> msg.id:", msg.id);
+    const payload = {
+      messageId: Number(msg.messageId ?? 0),
+      userId: this.myUserId,
+      reactionId: reaction.id
+    };
+
+    this.ChatService.addMessageReaction(payload).subscribe({
+      next: () => {
+        if (!msg.reactions) msg.reactions = [];
+        msg.reactions = [reaction];
+        msg.showReactions = false;
+      },
+      error: (err) => console.error('Error adding reaction:', err)
+    });
   }
+
+
+
 }

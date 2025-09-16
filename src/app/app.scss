@@ -1,251 +1,348 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 .app-container {
   display: grid;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: #f9f9f9;
+
+  // Desktop layout (1200px and above)
   grid-template-areas:
     "sidebar navbar navbar"
     "sidebar chat-list chat-window";
-  grid-template-columns: 260px 320px 1fr;
+  grid-template-columns: 260px 300px 1fr;
   grid-template-rows: 70px 1fr;
   gap: 20px;
   padding: 20px;
-  height: 100vh;
-  background: #f9f9f9;
 
   app-sidebar {
     grid-area: sidebar;
-
+    // background: white;
+    // border-radius: 12px;
+    // box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
   }
 
   app-navbar {
     grid-area: navbar;
-
   }
 
   app-chat-list {
     grid-area: chat-list;
-
   }
 
   app-chat-window {
     grid-area: chat-window;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    margin-bottom: 50px;
   }
 }
 
-@media (max-width: 768px) {
+
+// Tablet landscape (768px - 1199px)
+@media screen and (max-width: 1199px) {
   .app-container {
     grid-template-areas:
-      "navbar"
-      "chat-list"
-      "chat-window";
-    grid-template-columns: 1fr;
-    grid-template-rows: 70px 1fr 1fr;
-  }
+      "navbar navbar navbar"
+      "sidebar chat-list chat-window";
+    grid-template-columns: 240px 280px 1fr;
+    grid-template-rows: 60px 1fr;
+    gap: 15px;
+    padding: 15px;
 
-  app-sidebar {
-    display: none;
-  }
-
-  app-navbar {
-    grid-area: navbar;
-    width: 100%;
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 1000;
-    background: #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    padding: 10px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #e0e0e0;
-    z-index: 1000;
-
-    app-navbar-logo {
-      font-size: 1.5rem;
-      font-weight: bold;
+    app-sidebar {
+      min-width: 200px;
     }
-    app-navbar-menu {
-      display: flex;
-      gap: 15px;
-    }
-    app-navbar-menu-item {
-      cursor: pointer;
-      color: #333;
-      text-decoration: none;
-      font-size: 1rem;
-      transition: color 0.3s;
-
-      &:hover {
-        color: #007bff;
-      }
-    }
-
-  }
-
-  app-chat-list {
-    grid-area: chat-list;
-  }
-
-  app-chat-window {
-    grid-area: chat-window;
   }
 }
 
-/* ========== Desktop Default (≥ 1024px) ========== */
-.app-container {
-  display: grid;
-  grid-template-areas:
-    "sidebar navbar navbar"
-    "sidebar chat-list chat-window";
-  grid-template-columns: 260px 320px 1fr;
-  grid-template-rows: 70px 1fr;
-  height: 100vh;
-  
-}
-
-/* Sidebar */
-.sidebar {
-  grid-area: sidebar;
-  background: #fff;
-  border-right: 1px solid #ddd;
-}
-
-/* Navbar */
-.navbar {
-  grid-area: navbar;
-  background: #f8f9fa;
-  border-bottom: 1px solid #ddd;
-}
-
-/* Chat list */
-.chat-list {
-  grid-area: chat-list;
-  border-right: 1px solid #ddd;
-  overflow-y: auto;
-  background: #fff;
-}
-
-/* Chat window */
-.chat-window {
-  grid-area: chat-window;
-  background: #fafafa;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ========== Tablet (768px – 1023px) ========== */
-@media (max-width: 1023px) {
+// Tablet portrait (768px - 1023px)
+@media screen and (max-width: 1023px) {
   .app-container {
     grid-template-areas:
       "navbar navbar"
       "chat-list chat-window";
-    grid-template-columns: 280px 1fr;
-    grid-template-rows: 70px 1fr;
+    grid-template-columns: 320px 1fr;
+    grid-template-rows: 60px 1fr;
+    gap: 15px;
+    padding: 15px;
+
+    app-sidebar {
+      position: fixed;
+      left: -260px;
+      top: 0;
+      height: 100vh;
+      width: 260px;
+      z-index: 1000;
+      background: white;
+      border-radius: 0;
+      border-top-right-radius: 12px;
+      border-bottom-right-radius: 12px;
+      transition: left 0.3s ease;
+
+      &.sidebar-open {
+        left: 0;
+      }
+    }
+
+    // Add overlay for mobile sidebar
+    &::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    &.sidebar-open::before {
+      opacity: 1;
+      visibility: visible;
+    }
   }
 
-  .sidebar {
-    display: none; /* إخفاء السايدبار */
-  }
+  // Add hamburger menu button styles
+  .menu-toggle {
+    display: block;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
 
-  .chat-list {
-    border-right: 1px solid #ddd;
-  }
-}
-
-.app-container {
-  display: grid;
-  grid-template-areas:
-    "sidebar navbar navbar"
-    "sidebar chat-list chat-window";
-  grid-template-columns: 260px 320px 1fr;
-  grid-template-rows: 70px 1fr;
-  height: 100vh;
-
-  .sidebar {
-    grid-area: sidebar;
-  }
-
-  .header {
-    grid-area: navbar;
-  }
-
-  .chat-list {
-    grid-area: chat-list;
-  }
-
-  .chat-window {
-    grid-area: chat-window;
-  }
-}
-
-.app-container {
-  display: grid;
-  grid-template-areas:
-    "sidebar navbar navbar"
-    "sidebar chat-list chat-window";
-  grid-template-columns: 260px 320px 1fr;
-  grid-template-rows: 70px 1fr;
-  height: 100vh;
-
-  .sidebar {
-    grid-area: sidebar;
-  }
-
-  .header {
-    grid-area: navbar;
-  }
-
-  .chat-list {
-    grid-area: chat-list;
-  }
-
-  .chat-window {
-    grid-area: chat-window;
+    &:hover {
+      background: #f0f0f0;
+    }
   }
 }
 
-/* 📱 Mobile */
-@media (max-width: 767px) {
+// Mobile landscape (481px - 767px)
+@media screen and (max-width: 767px) {
   .app-container {
     grid-template-areas:
       "chat-list";
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
+    grid-template-rows: 60px 1fr;
+    gap: 0;
+    padding: 0;
+
+
+    app-navbar {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 60px;
+      z-index: 1000;
+      background: white;
+      border-radius: 0;
+      border-bottom: 1px solid #ddd;
+    }
+
+    app-chat-list {
+      // Default state - visible when not in chat window
+      position: static;
+      height: calc(100vh - 60px);
+      z-index: auto;
+      border-radius: 0;
+      transition: none;
+      display: block;
+    }
+
+    app-chat-window {
+      // Hide chat-window by default on mobile
+      display: none;
+      position: fixed;
+      top: 60px;
+      left: 0;
+      width: 100vw;
+      height: calc(100vh - 60px);
+      z-index: 1001;
+      background: white;
+      border-radius: 0;
+
+    }
+
+
+
+    // When chat window is open on mobile
+    &.chat-window-open {
+      app-chat-list {
+        display: none;
+      }
+
+      app-chat-window {
+        display: flex;
+        align-items: stretch;
+        margin-top: -55px;
+        height: 100vh;
+      }
+    }
+
+    // Add overlay for mobile sidebar
+    &::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    &.sidebar-open::before {
+      opacity: 1;
+      visibility: visible;
+    }
   }
 
-  .sidebar,
-  .header,
-  .chat-window {
-    display: none;
-  }
+  // Back button styles
+  .back-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: #007bff;
+    font-weight: bold;
 
-  .chat-list {
-    grid-area: chat-list;
-    width: 100%;
-    height: 100%;
+    &:hover {
+      background: #f0f0f0;
+    }
+
+    &:focus {
+      outline: 2px solid #007bff;
+      outline-offset: 2px;
+    }
   }
 }
 
-/* 📟 Tablet */
-@media (min-width: 768px) and (max-width: 1023px) {
+// Mobile portrait (320px - 480px)
+@media screen and (max-width: 480px) {
+  .app-container {
+    padding: 0;
+    gap: 0;
+
+    app-navbar {
+      padding: 0 15px;
+      height: 60px;
+
+      .navbar-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+      }
+    }
+
+    // Stack mobile navigation buttons
+    .mobile-nav-buttons {
+      display: flex;
+      gap: 10px;
+
+      button {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 6px;
+        background: #007bff;
+        color: white;
+        font-size: 12px;
+        cursor: pointer;
+
+        &:hover {
+          background: #0056b3;
+        }
+      }
+    }
+
+    // Adjust back button for smaller screens
+    .back-button {
+      font-size: 18px;
+      padding: 6px 10px;
+    }
+  }
+}
+
+// Ultra-wide screens (1920px and above)
+@media screen and (min-width: 1920px) {
+  .app-container {
+    grid-template-columns: 300px 400px 1fr;
+    gap: 24px;
+    padding: 24px;
+
+    app-sidebar {
+      min-width: 280px;
+    }
+  }
+}
+
+// Accessibility and utility classes
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Smooth transitions for all interactive elements
+.app-container * {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+// Focus styles for accessibility
+.app-container button:focus,
+.app-container input:focus,
+.app-container textarea:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+// Print styles
+@media print {
   .app-container {
     grid-template-areas:
-      "chat-list chat-window";
-    grid-template-columns: 320px 1fr;
+      "chat-window";
+    grid-template-columns: 1fr;
     grid-template-rows: 1fr;
-  }
 
-  .sidebar,
-  .header {
-    display: none;
-  }
+    app-sidebar,
+    app-navbar,
+    app-chat-list {
+      display: none;
+    }
 
-  .chat-list {
-    grid-area: chat-list;
-  }
-
-  .chat-window {
-    grid-area: chat-window;
+    app-chat-window {
+      box-shadow: none;
+      border: 1px solid #ddd;
+    }
   }
 }
-

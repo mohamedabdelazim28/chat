@@ -1,8 +1,8 @@
-import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatService, ChatThread } from '../services/chat-service';
-import { map } from 'rxjs';
+import { EventEmitter } from '@angular/core';
 
 @Component({
   selector: 'app-chat-list',
@@ -21,76 +21,21 @@ export class ChatListComponent implements OnInit {
 
   activeFilter: string = 'all';
   searchTerm: string = '';
+  selectedChat : any = null;
+
+   @Input() selectedChatId: string | null = null;
+  @Output() chatSelected = new EventEmitter<string>();
 
 
-  // messages: ChatThread[] = [
-  //   {
-  //     lastMessage: 'test message 1',
-  //     body: 'test message 1',
-  //     messages: [],
-  //     lastMessageTime: new Date('2025-08-25T15:42:01Z'),
-  //     name: 'User 1',
-  //     photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
-  //     totalCount: 1,
-  //     unreadCount: 1,
-  //     userId: 601
-  //   },
-  //   {
-  //     lastMessage: 'test message 2',
-  //     body: 'test message 2',
-  //     messages: [],
-  //     lastMessageTime: new Date('2025-08-25T15:42:02Z'),
-  //     name: 'User 2',
-  //     photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
-  //     totalCount: 2,
-  //     unreadCount: 0,
-  //     userId: 602
-  //   },
-  //   {
-  //     lastMessage: 'test message 3',
-  //     body: 'test message 3',
-  //     messages: [],
-  //     lastMessageTime: new Date('2025-08-25T15:42:03Z'),
-  //     name: 'User 3',
-  //     photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
-  //     totalCount: 3,
-  //     unreadCount: 5,
-  //     userId: 603
-  //   },
-  //   {
-  //     lastMessage: 'test message 4',
-  //     body: 'test message 4',
-  //     messages: [],
-  //     lastMessageTime: new Date('2025-08-25T15:42:04Z'),
-  //     name: 'User 4',
-  //     photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
-  //     totalCount: 4,
-  //     unreadCount: 1,
-  //     userId: 604
-  //   },
-  //   {
-  //     lastMessage: 'test message 5',
-  //     body: 'test message 5',
-  //     messages: [],
-  //     lastMessageTime: new Date('2025-08-25T15:42:05Z'),
-  //     name: 'User 5',
-  //     photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
-  //     totalCount: 5,
-  //     unreadCount: 0,
-  //     userId: 605
-  //   },
-  //   {
-  //     lastMessage: 'test message 6',
-  //     body: 'test message 6',
-  //     messages: [],
-  //     lastMessageTime: new Date('2025-08-25T15:42:06Z'),
-  //     name: 'User 6',
-  //     photo: 'https://dwr9zlq9lexeu.cloudfront.net/Development/UserProfile/117231a5-ae76-44cd-bc17-d5b4d68249e7.avif',
-  //     totalCount: 6,
-  //     unreadCount: 1,
-  //     userId: 606
-  //   }
-  // ];
+  onChatClick(chatId: string) {
+    this.chatSelected.emit(chatId);
+  }
+
+
+  onSelectChat(chatId: string) {
+    console.log('Chat clicked:', chatId);
+    this.chatSelected.emit(chatId);
+  }
 
   private chatService = inject(ChatService);
   constructor(private cdr: ChangeDetectorRef) { }
@@ -102,69 +47,22 @@ export class ChatListComponent implements OnInit {
   loadConversations(loadMore: boolean = false): void {
     if (this.isLoading) return;
     this.isLoading = true;
-
-    this.chatService
-      .getusermessage(this.limit, this.page)
-      .pipe(
-        map((res: any) => {
-          this.isLoading = false;
-          const grouped = new Map<number, ChatThread>();
-
-
-          (res?.data ?? []).forEach((msg: any) => {
-            const userId = msg.user.id;
-            if (!grouped.has(userId)) {
-              grouped.set(userId, {
-                userId,
-                name: `${msg.user.firstName} ${msg.user.lastName}`,
-                photo: msg.fromUser.photo,
-                body: msg.body,
-                lastMessage: msg.body,
-                messages: [msg],
-                lastMessageTime: new Date(msg.createdOn),
-                unreadCount: msg.isReaded ? 0 : 1,
-                totalCount: 1
-              });
-            } else {
-              const existing = grouped.get(userId)!;
-
-              existing["unreadCount"] += msg.isReaded ? 0 : 1;
-              existing["totalCount"] += 1;
-              existing["messages"].push(msg);
-
-              grouped.set(userId, existing);
-
-              if (new Date(msg.createdOn) > existing.lastMessageTime) {
-                existing.lastMessage = msg.body;
-                existing.lastMessageTime = new Date(msg.createdOn);
-              }
-              if (!msg.isReaded) existing.unreadCount += 1;
-              existing.totalCount += 1;
-            }
-          });
-
-          const apiChats = Array.from(grouped.values());
-
-          this.chatService.setMessages([...apiChats]); //, ...this.messages
-
-          return [...apiChats];
-
-        })
-      )
-      .subscribe({
-        next: (currentPageData: ChatThread[]) => {
+    this.chatService.getusermessage(this.limit, this.page)
+   .subscribe({
+        next:  ( { data , totalCount }) => {
           if (loadMore) {
-            this.chats = [...this.chats, ...currentPageData];
+            this.chats = [...this.chats, ...data];
           } else {
-            this.chats = currentPageData;
+            this.chats = data;
           }
 
-          this.totalRecords = this.chats.length;
+          this.totalRecords = totalCount;
 
           this.displayedChats = this.filterChats(this.chats);
           this.cdr.detectChanges();
 
           this.isLoading = false;
+          console.log(data , totalCount);
         },
         error: (err) => {
           console.error('Error loading conversations:', err);
@@ -177,6 +75,12 @@ export class ChatListComponent implements OnInit {
         }
       });
   }
+
+  getusermessage() {
+
+  }
+
+
 
   loadNextPage(): void {
     this.page++;
@@ -199,7 +103,7 @@ export class ChatListComponent implements OnInit {
     let filtered = [...chats];
 
     if (this.activeFilter === 'unread') {
-      filtered = filtered.filter((c) => c.unreadCount > 0);
+      filtered = filtered.filter((c) => c.numberOfUnread > 0);
     } else if (this.activeFilter === 'groups') {
       filtered = filtered.filter((c: any) => c.isGroup);
     }
@@ -208,8 +112,9 @@ export class ChatListComponent implements OnInit {
       const term = this.searchTerm.toLowerCase();
       filtered = filtered.filter(
         (c) =>
-          c.name?.toLowerCase().includes(term) ||
-          c.lastMessage?.toLowerCase().includes(term)
+          c.firstName?.toLowerCase().includes(term) ||
+          c.message?.toLowerCase().includes(term) ||
+          c.lastName?.toLowerCase().includes(term)
       );
     }
 
@@ -219,5 +124,8 @@ export class ChatListComponent implements OnInit {
   selectChat(userId: number): void {
     console.log(userId)
     this.chatService.setSelectedUser(userId);
+     this.chatSelected.emit(userId.toString());
   }
+
+
 }

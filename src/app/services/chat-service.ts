@@ -1,32 +1,18 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { BehaviorSubject, map, Observable } from 'rxjs';
 
 export interface ChatThread {
+  id: number;
   userId: number;
-  name: string;
   photo: string;
-  body: string;
-  message?:string;
-  lastMessage: string;
-  messages: any[];
-  lastMessageTime: Date;
-  unreadCount: number;
-  totalCount: number;
-  sender?: string;
-  fromUserId?: number;
-  type?: string;
-  time?: string;
-  reaction?: string;
-  showReactions?: boolean;
-  menuOpen?: boolean;
-  showMenu?: boolean;
-  isEditing?: boolean;
-  attachmentId?: string | null;
-  voiceFileId?: string | null;
-  msgId?: string | null;
-  reactions?: string[];
-  recordedChunks?: any[];
+  firstName: string;
+  lastName: string,
+  userName: string;
+  message: string;
+  sendDate: string;
+  numberOfUnread: number;
+  isReaded: boolean;
 }
 
 @Injectable({
@@ -38,8 +24,7 @@ export class ChatService {
 
   private http = inject(HttpClient);
   private baseURL = 'https://devbe.ariseorganization.com';
-  private jwtToken = "Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoic2FtaXJhIGhhc3NhbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiNTM0IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic2FtaXJhaGFzc2FubjQ0QGdtYWlsLmNvbSIsInVpZCI6IjUzNCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkZhbWlseSBNZW1iZXIiLCJleHAiOjE3NTcyODAwNTEsImlzcyI6IklkZW50aXR5IiwiYXVkIjoiSWRlbnRpdHlVc2VyIn0.NnzVL_eaUsIct1_kB5N82bVt02PRCaM04OGo21k733M"
-
+  private jwtToken = "Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoic2FtaXJhIGhhc3NhbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiNTM0IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic2FtaXJhaGFzc2FubjQ0QGdtYWlsLmNvbSIsInVpZCI6IjUzNCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkZhbWlseSBNZW1iZXIiLCJleHAiOjE3ODgxMDU1MDYsImlzcyI6IklkZW50aXR5IiwiYXVkIjoiSWRlbnRpdHlVc2VyIn0.JJJGH5xbXFP5pn42veFK-u510gwn4jOlelE03JRe9Xk";
   conversations: any[] = [];
 
   sendNewMessage(payload: {
@@ -59,34 +44,26 @@ export class ChatService {
   }
 
   getusermessage(pageSize: number, pageNumber: number) {
-    return this.http.get<{ data: any[] }>(`${this.baseURL}/api/Message/GetUserChatMessages`, {
+    return this.http.get<{ data: ChatThread[], totalCount: number }>(`${this.baseURL}/api/Message/GetUserOutgoingMessages`, {
       headers: {
         'Authorization': this.jwtToken,
       },
-      params: { WithUserId: '694', PageSize: pageSize, PageNumber: pageNumber  },
+      params: { WithUserId: '534', PageSize: pageSize, PageNumber: pageNumber },
     });
   }
 
-  GetUserOutgoingMessages(pageSize: number, pageNumber: number) {
-    return this.http.get<{ data: any[] }>(`${this.baseURL}/api/Message/GetUserOutgoingMessages`, {
+
+  getChatByUserId(UserId: number) {
+    return this.http.get(`${this.baseURL}/api/Message/GetUserChatMessages`, {
       headers: {
         'Authorization': this.jwtToken,
       },
-      params: { PageSize: pageSize, PageNumber: pageNumber },
+      params: { WithUserId: String(UserId) },
     });
   }
-
-  getUserChatsById(): Observable<any[]> {
-    return this.SelectedUserId.pipe(
-      map((userId) => {
-        const messages = this.allMessages.find((c) => c.userId === userId)?.messages;
-        return messages ?? [];
-      })
-    );
-  }
-
   setSelectedUser(UserId: number) {
     this.SelectedUserId.next(UserId);
+    console.log(UserId);
   }
 
   setMessages(messages: ChatThread[]) {
@@ -116,4 +93,45 @@ export class ChatService {
       }
     });
   }
+
+  getAllReactions() {
+    return this.http.get(`${this.baseURL}/api/Master/GetAllReactions`, {
+      headers: {
+        'Authorization': this.jwtToken,
+      },
+    });
+  }
+
+  deleteMessage(messageId: number) {
+  const params = new HttpParams().set('MessageId', messageId.toString());
+
+  return this.http.delete(`${this.baseURL}/api/Message/DeleteMessage`, {
+    headers: { Authorization: this.jwtToken },
+    params
+  });
+}
+
+deleteForMe(messageId: number) {
+  const params = new HttpParams().set('MessageId', messageId.toString());
+
+  return this.http.delete(`${this.baseURL}/api/Message/DeleteMessageFromMe`, {
+    headers: { Authorization: this.jwtToken },
+    params
+  });
+}
+
+editMessage(messageId: number, message: string) {
+  const body = {
+    messageId: messageId,
+    message: message
+  };
+
+  return this.http.post(`${this.baseURL}/api/Message/EditMessage`, body, {
+    headers: {
+      'Authorization': this.jwtToken,
+      'Content-Type': 'application/json'
+    }
+  });
+}
+
 }
