@@ -44,7 +44,7 @@
         <div class="conversation-content">
           <div class="conversation-header">
             <span class="name">{{ chat.firstName }} {{ chat.lastName }}</span>
-            <span class="time">{{ chat.sendDate | date:'shortTime' }}</span>
+            <span class="time">{{ getMessageDate(chat.sendDate )| date:'shortTime' }}</span>
           </div>
           <div class="message-preview">{{ chat.message }}</div>
         </div>

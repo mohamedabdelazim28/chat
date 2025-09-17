@@ -21,14 +21,18 @@ export class ChatListComponent implements OnInit {
 
   activeFilter: string = 'all';
   searchTerm: string = '';
-  selectedChat : any = null;
+  selectedChat: any = null;
 
-   @Input() selectedChatId: string | null = null;
+  @Input() selectedChatId: string | null = null;
   @Output() chatSelected = new EventEmitter<string>();
 
 
   onChatClick(chatId: string) {
     this.chatSelected.emit(chatId);
+  }
+
+  getMessageDate(date: string) {
+    return new Date(date + 'Z')
   }
 
 
@@ -48,8 +52,8 @@ export class ChatListComponent implements OnInit {
     if (this.isLoading) return;
     this.isLoading = true;
     this.chatService.getusermessage(this.limit, this.page)
-   .subscribe({
-        next:  ( { data , totalCount }) => {
+      .subscribe({
+        next: ({ data, totalCount }) => {
           if (loadMore) {
             this.chats = [...this.chats, ...data];
           } else {
@@ -62,7 +66,7 @@ export class ChatListComponent implements OnInit {
           this.cdr.detectChanges();
 
           this.isLoading = false;
-          console.log(data , totalCount);
+          console.log(data, totalCount);
         },
         error: (err) => {
           console.error('Error loading conversations:', err);
@@ -124,7 +128,7 @@ export class ChatListComponent implements OnInit {
   selectChat(userId: number): void {
     console.log(userId)
     this.chatService.setSelectedUser(userId);
-     this.chatSelected.emit(userId.toString());
+    this.chatSelected.emit(userId.toString());
   }
 
 
