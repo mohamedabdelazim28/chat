@@ -1,10 +1,11 @@
-import { ChatService, ChatThread  } from './../services/chat-service';
-import { Component, ElementRef, inject, OnInit, ViewChild, HostListener, Input, ChangeDetectorRef } from '@angular/core';
+import { ChatService, ChatThread } from './../services/chat-service';
+import { Component, ElementRef, inject, OnInit, ViewChild, HostListener, Input, ChangeDetectorRef, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
 import { map, Observable } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { EventEmitter } from '@angular/core';
 
 type UiChatThread = ChatThread & {
   messageId?: number;
@@ -39,22 +40,44 @@ type UiChatThread = ChatThread & {
 export class ChatWindowcomponent implements OnInit {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
-  private ChatService = inject(ChatService);
-  private SelectedUserId = this.ChatService.SelectedUserId;
+  private chatService = inject(ChatService);
+  private SelectedUserId = this.chatService.SelectedUserId;
   myMessages$;
   public messages: any[] = [];
   public myUserId = 534;
   constructor(private cdr: ChangeDetectorRef, private sanitizer: DomSanitizer) { }
-
-
+  baseURL = "https://devbe.ariseorganization.com"
+  isChatWindowOpen: boolean = false;
 
   availableReactions: any[] = [];
 
   @Input() selectedChatId: string | null = null;
+  @Input() isMobile: boolean = false;
+  @Output() backToList = new EventEmitter<void>();
+
+ openChat(chatId: string) {
+  this.selectedChatId = chatId;
+  this.isChatWindowOpen = true;
+}
+
+goBackToChatList() {
+  this.backToList.emit(); 
+}
+
+  isImage(path: string): boolean {
+    return /\.(jpg|jpeg|png|gif)$/i.test(path);
+  }
+
+  
+
+  getImageUrl(path: string): string {
+    return `${this.baseURL}/${path}`;
+
+  }
 
   ngOnInit(): void {
 
-    this.ChatService.getAllReactions().subscribe({
+    this.chatService.getAllReactions().subscribe({
       next: (res: any) => {
         console.log('Reactions API response', res)
         this.availableReactions = res.data;
@@ -62,17 +85,14 @@ export class ChatWindowcomponent implements OnInit {
       error: (err) => console.log('Error fetching reactions', err)
     });
 
-
-
-
     console.log('SelectedUserId', this.SelectedUserId)
 
-    this.SelectedUserId
+    this.SelectedUserId 
       .subscribe((userId) => {
         console.log('userid', userId)
         this.messages = [];
         if (userId) {
-          this.ChatService.getChatByUserId(userId as number)
+          this.chatService.getChatByUserId(userId as number)
             .pipe(
               map((res: any) => {
                 console.log('res', res)
@@ -81,10 +101,13 @@ export class ChatWindowcomponent implements OnInit {
                   return {
                     messageId: msg.messageId ?? msg.id,
                     sender: msg.fromUser.id === this.myUserId ? 'You' : msg.fromUser.firstName + ' ' + msg.fromUser.lastName,
-                    content: msg.body,
+                    content: msg.type === 'image'
+                      ? `data:image/jpeg;base64,${msg.body}`
+                      : msg.body,
                     time: msg.createdOn,
                     avatar: msg.fromUser.photo,
-                    type: "text",
+                    type: msg.type,
+                    name: msg.fromUser.firstName + ' ' + msg.fromUser.lastName,
                   };
 
                 })
@@ -114,6 +137,9 @@ export class ChatWindowcomponent implements OnInit {
   safecontent: SafeHtml = '';
   messageEmoji: string = '';
   emojiInput: string = '';
+  imageUrl: string | null = null;
+
+
 
   // Emoji
   toggleEmojiPicker() {
@@ -133,7 +159,7 @@ export class ChatWindowcomponent implements OnInit {
   }
 
   sendMessage() {
-    if (this.messageInput.trim() || this.messageEmoji) {
+    if (this.messageInput.trim() || this.imageUrl) {
       const payload = {
         userId: this.SelectedUserId.value ?? 694,
         body: this.messageInput,
@@ -143,7 +169,7 @@ export class ChatWindowcomponent implements OnInit {
         messageCode: this.emojiInput ?? "",
       };
 
-      this.ChatService.sendNewMessage(payload).subscribe({
+      this.chatService.sendNewMessage(payload).subscribe({
         next: () => {
           this.safecontent = this.sanitizer.bypassSecurityTrustHtml(this.messageEmoji);
           const newMsg = {
@@ -152,7 +178,9 @@ export class ChatWindowcomponent implements OnInit {
             sender: 'You',
             name: 'You',
             photo: 'assets/imges/Ellipse 514.svg',
-            content: this.messageInput + this.sanitizer.bypassSecurityTrustHtml(this.messageEmoji),
+            content: this.imageUrl ? this.imageUrl : this.messageInput,
+            type: this.imageUrl ? 'image' : 'text',
+            time: Date.now().toString() + '_' + Math.random().toString(36).slice(2),
             message: "",
             messages: [
               {
@@ -166,8 +194,6 @@ export class ChatWindowcomponent implements OnInit {
             lastMessageTime: new Date(),
             unreadCount: 0,
             totalCount: 1,
-            type: 'text',
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             msgId: Date.now().toString() + '_' + Math.random().toString(36).slice(2),
           };
 
@@ -197,7 +223,7 @@ export class ChatWindowcomponent implements OnInit {
     if (file) {
       const fileUrl = URL.createObjectURL(file);
       const base = {
-        userId: 694,
+        userId: this.SelectedUserId.value ?? 694,
         sender: 'You',
         name: 'You',
         photo: 'assets/imges/Ellipse 514.svg',
@@ -209,40 +235,47 @@ export class ChatWindowcomponent implements OnInit {
       };
 
       if (file.type.startsWith('image/')) {
-        this.messages.push({
-          ...base,
-          body: fileUrl,
-          lastMessage: fileUrl,
-          messages: [
-            {
-              userId: 694,
-              body: fileUrl,
-              type: 'image',
-              time: base.time!,
-              photo: 'assets/imges/Ellipse 514.svg',
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64Image = reader.result as string;
+
+          const payload = {
+            userId: this.SelectedUserId.value ?? 694,
+            body: base64Image,
+            voiceFileId: null,
+            attachmentId: null,
+            groupId: null,
+            messageCode: "",
+          };
+
+          this.chatService.sendNewMessage(payload).subscribe({
+            next: () => {
+              this.messages.push({
+                ...base,
+                content: base64Image,
+                type: 'image',
+                messages: [
+                  {
+                    userId: base.userId,
+                    body: base64Image,
+                    type: 'image',
+                    time: base.time!,
+                    photo: base.photo,
+                  },
+                ],
+              });
             },
-          ],
-          type: 'image',
-        });
-      } else {
-        this.messages.push({
-          ...base,
-          body: file.name,
-          lastMessage: file.name,
-          messages: [
-            {
-              userId: 694,
-              body: file.name,
-              type: 'file',
-              time: base.time!,
-              photo: 'assets/imges/Ellipse 514.svg',
+            error: (err) => {
+              console.error('Error sending image message:', err);
             },
-          ],
-          type: 'file',
-        });
+          });
+        };
+        reader.readAsDataURL(file);
       }
     }
   }
+
 
   // Audio Recording
   mediaRecorder: any;
@@ -360,29 +393,45 @@ export class ChatWindowcomponent implements OnInit {
   }
 
   saveEdit(msg: UiChatThread) {
-    if (typeof msg.editBody === 'string') {
+  if (typeof msg.editBody === 'string') {
+    const newText = msg.editBody;
 
-      msg.body = msg.editBody;
+    msg.body = newText;
+    msg.content = newText;
 
-      if (Array.isArray(msg.messages) && msg.messages.length) {
-        const last = msg.messages[msg.messages.length - 1];
-        if (last && (!last.type || last.type === 'text')) {
-          last.body = msg.editBody;
-        }
+    if (Array.isArray(msg.messages) && msg.messages.length) {
+      const lastIndex = msg.messages.length - 1;
+      const last = msg.messages[lastIndex];
+      if (last && (!last.type || last.type === 'text')) {
+
+        msg.messages = [
+          ...msg.messages.slice(0, lastIndex),
+          { ...last, body: newText },
+        ];
       }
-
-      msg.isEditing = false;
-      this.ChatService.editMessage(Number(msg.messageId), msg.editBody).subscribe({
-        next: (res: any) => {
-          console.log('Message updated on server', res);
-        },
-        error: (err) => {
-          console.error('Error updating message:', err);
-
-        }
-      });
     }
+
+    msg.isEditing = false;
+
+
+    this.messages = this.messages.map(m =>
+      (m.messageId === msg.messageId) ? { ...m, ...msg } : m
+    );
+
+    this.cdr.detectChanges();
+
+
+    this.chatService.editMessage(Number(msg.messageId), newText).subscribe({
+      next: (res: any) => {
+        console.log('Message updated on server', res)
+      },
+      error: (err) => {
+        console.error('Error updating message:', err);
+
+      }
+    });
   }
+}
 
 
   cancelEdit(msg: UiChatThread) {
@@ -394,15 +443,15 @@ export class ChatWindowcomponent implements OnInit {
 
   confirmDelete(msg: any, type: 'everyone' | 'me') {
     if (type === 'everyone') {
-      this.ChatService.deleteMessage(msg.messageId).subscribe({
+      this.chatService.deleteMessage(msg.messageId).subscribe({
         next: () => {
           msg.deletedForEveryone = true;
           msg.deletedForMe = false;
-          msg.content = ''; // نخفي الرسالة الأصلية
+          msg.content = '';
         }
       });
     } else if (type === 'me') {
-      this.ChatService.deleteForMe(msg.messageId).subscribe({
+      this.chatService.deleteForMe(msg.messageId).subscribe({
         next: () => {
           msg.deletedForMe = true;
           msg.deletedForEveryone = false;
@@ -427,7 +476,7 @@ export class ChatWindowcomponent implements OnInit {
       reactionId: reaction.id
     };
 
-    this.ChatService.addMessageReaction(payload).subscribe({
+    this.chatService.addMessageReaction(payload).subscribe({
       next: () => {
         if (!msg.reactions) msg.reactions = [];
         msg.reactions = [reaction];

@@ -79,18 +79,23 @@ export class AppComponent implements OnInit, OnDestroy {
 
   onChatSelected(chatId: string) {
       console.log('onChatSelected', { chatId, isMobile: this.isMobile });
-    this.selectedChatId = chatId;
+    this.selectedChatId = String(chatId);
 
-    if (this.isMobile) {
+    if (this.isMobile) {                                  
       this.isChatWindowOpen = true;
           this.isChatListOpen = false;
     }
   }
 
+  openChat(chatId: number) {
+  this.selectedChatId = String(chatId);
+  this.isChatWindowOpen = true;   
+  }
+
   goBackToChatList() {
     if (this.isMobile) {
-      this.isChatListOpen = false;
-      this.isChatWindowOpen = true;
+      this.isChatListOpen = true;
+      this.isChatWindowOpen = false;
       this.selectedChatId = null;
     }
   }

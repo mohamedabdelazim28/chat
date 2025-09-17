@@ -20,12 +20,20 @@
     display: flex;
     align-items: center;
     flex-shrink: 0;
-    justify-content: space-between;
     padding: 16px 24px;
+    justify-content: space-between;
     border-bottom: 1px solid #e2e8f0;
     background-color: #ffffff;
     border-radius: 16px 16px 0 0;
 
+
+    .back-button{
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 16px;
+      color: #3b82f6;
+    }
 
 
     .contact-info {
@@ -242,59 +250,97 @@
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          width: 300px;
-          height: 150px;
-          background-color: #ffffff;
+          width: 100%;
+          max-width: 500px;
+          max-height: 300px ;
+          background-color: #fff;
           display: flex;
-          justify-content: center;
-          align-items: center;
           flex-direction: column;
+          align-items: center;
           z-index: 1000;
-          border-radius: 12px;
+          border-radius: 16px;
           padding: 20px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
 
           p {
-            color: #000000;
-            font-size: 14px;
-            margin-bottom: 12px;
-            font-weight: 900;
+            color: #2f3946;
+            font-size: 16px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            text-align: center;
           }
 
           .delete-btn {
             display: flex;
-            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
 
-            .for-me,
-            .for-everyone {
-              background-color: #2f3946;
-              color: #ffffff;
+            button {
+              min-width: 90px;
+              padding: 10px 16px;
               border: none;
-              border-radius: 4px;
-              padding: 8px 15px;
+              border-radius: 8px;
+              font-size: 14px;
+              font-weight: 500;
               cursor: pointer;
-              transition: .3s ease;
+              transition: background-color 0.3s ease;
+              white-space: nowrap;
               text-align: center;
+            }
+
+            .for-everyone{
+              background-color: #1b7f9d;
+              color: #fff;
+              transition: .5 ease;
 
               &:hover {
-                background-color: #2f394681;
-                transition: .3s ease;
+                background-color: #0ea5e9;
+                transition: .5 ease;
+              }
+            }
+
+
+            .for-me {
+              background-color: #1b7f9d;
+              color: #fff;
+              transition: .5s ease;
+
+              &:hover {
+                background-color: #0ea5e9;
+                transition: .5s ease;
               }
             }
 
             .cancel {
-              background-color: #a91226;
-              color: #ffffff;
-              border: none;
-              border-radius: 4px;
-              padding: 8px 6px;
-              cursor: pointer;
-              transition: .3s ease;
-              text-align: center;
+              background-color: #a3a2a2;
+              color: #000000;
+              transition: .5s ease;
 
               &:hover {
-                background-color: #a912268f;
-                transition: .3s ease;
+                background-color: #dbd7d7;
+                transition: .5s ease;
+              }
+            }
+          }
+        }
+
+        /* موبايل */
+        @media (max-width: 480px) {
+          .delete-popup {
+            padding: 16px;
+
+            p {
+              font-size: 14px;
+            }
+
+            .delete-btn {
+              flex-direction: column;
+              gap: 8px;
+
+              button {
+                width: 100%;
               }
             }
           }
@@ -448,15 +494,16 @@
 
         .image-message {
           max-width: 220px;
-          max-height: 120px;
-          border-radius: 12px;
+          max-height: 220px;
+          border-radius: 8px;
+          margin-top: 4px;
           display: block;
           overflow: hidden;
 
 
           img {
             width: 100%;
-            border-radius: 12px;
+            border-radius: 8px;
             display: block;
             object-fit: cover;
             max-width: 220px;

@@ -19,6 +19,9 @@ export interface ChatThread {
   providedIn: 'root'
 })
 export class ChatService {
+  uploadAttachment(formData: FormData) {
+    throw new Error('Method not implemented.');
+  }
   private allMessages: ChatThread[] = [];
   public SelectedUserId = new BehaviorSubject<number | null>(null);
 
@@ -41,6 +44,7 @@ export class ChatService {
         'Content-Type': 'application/json'
       }
     });
+
   }
 
   getusermessage(pageSize: number, pageNumber: number) {

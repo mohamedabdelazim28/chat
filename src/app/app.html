@@ -85,9 +85,11 @@
 
   <!-- Chat Window -->
   <app-chat-window
-    *ngIf="!isMobile || (isMobile && isChatWindowOpen)"
-    [selectedChatId]="selectedChatId"
-    (click)="$event.stopPropagation()">
-  </app-chat-window>
+  *ngIf="!isMobile || (isMobile && isChatWindowOpen)"
+  [isMobile]="isMobile"
+  [selectedChatId]="selectedChatId"
+  (backToList)="goBackToChatList()"
+  (click)="$event.stopPropagation()">
+</app-chat-window>
 
 </div>

@@ -1,5 +1,12 @@
 <div class="chat-window" (click)="closeAllMenus()">
   <div class="chat-window-header">
+      <button
+    *ngIf="isMobile"
+    class="back-button"
+    (click)="goBackToChatList()"
+    aria-label="Go back to chat list">
+    <mat-icon>keyboard_arrow_left</mat-icon>
+  </button>
     <div class="contact-info">
       <div class="contact-avatar">
         <img src="assets/imges/Avatar.svg" alt="Ronald Richards" />
@@ -35,12 +42,12 @@
       <div class="msg-content">
 
         <div class="deleted-text" *ngIf="msg.deletedForEveryone">
-            This message was deleted for everyone
-          </div>
+          This message was deleted for everyone
+        </div>
 
-          <div class="deleted-text" *ngIf="msg.deletedForMe">
-            This message was deleted for you
-          </div>
+        <div class="deleted-text" *ngIf="msg.deletedForMe">
+          This message was deleted for you
+        </div>
 
         <div *ngIf="!msg.type || msg.type === 'text'" class="text">
           <ng-container *ngIf="!msg.isEditing; else editTpl">
@@ -62,18 +69,22 @@
 
 
         <div *ngIf="msg.type === 'audio'" class="audio-message">
-          <audio controls [src]="msg.body"></audio>
+          <audio controls [src]="msg.content"></audio>
           <div class="time">{{ msg.time | date:'shortTime'}}</div>
         </div>
 
-        <div *ngIf="msg.type === 'image'" class="image-message">
-          <img [src]="msg.body" alt="Uploaded Image" />
-          <div class="time">{{ msg.time }}</div>
+        <div *ngIf="msg.type === 'image'" class="image" class="image-message">
+          <img [src]="msg.content" alt="Uploaded Image" />
+          <div class="time">{{ msg.time | date:'shortTime' }}</div>
+
+          <img [src]="'data:image/png;base64,' + msg.content"
+         alt="Image"
+         style="max-width: 200px; border-radius: 8px;" />
         </div>
 
         <div *ngIf="msg.type === 'file'" class="file-message">
           <mat-icon>insert_drive_file</mat-icon>
-          <span> {{ msg.content }}</span>
+          <span> {{ msg.attachmentId }}</span>
           <div class="time">{{ msg.time | date:'shortTime' }}</div>
         </div>
 
