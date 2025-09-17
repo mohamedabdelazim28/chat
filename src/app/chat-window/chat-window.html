@@ -24,14 +24,14 @@
 
   <div class="chat-messages">
 
-    <div class="empty-chat-state" *ngIf="!messages || messages.length === 0">
+    <div class="empty-chat-state" *ngIf="!(messages$ | async)?.length">
       <div class="empty-chat-content">
         <img src="assets/imges/chat-iWoW9HWbFw.svg" alt="No messages yet" class="empty-chat-image" />
         <h3>No messages yet</h3>
         <p>Start a conversation with Ronald Richards</p>
       </div>
     </div>
-    <div *ngFor="let msg of reversedMessages;  " class="message"
+    <div *ngFor="let msg of (messages$ | async);  " class="message"
       [ngClass]="{ 'my-message': msg.sender === 'You', 'other-message': msg.sender !== 'You' }"
       (mouseenter)="msg.showMenu = true" (mouseleave)="msg.showMenu = false">
 
@@ -49,7 +49,7 @@
           This message was deleted for you
         </div>
 
-        <div *ngIf="!msg.type || msg.type === 'text'" class="text">
+        <div  class="text">
           <ng-container *ngIf="!msg.isEditing; else editTpl">
             {{msg.content}}
           </ng-container>
@@ -62,14 +62,12 @@
             </div>
           </ng-template>
 
-          <div class="time">{{ msg.time | date:'shortTime' }}</div>
+          <div class="createdOn">{{ msg.createdOn | date:'shortTime' }}</div>
         </div>
 
-
-
-
         <div *ngIf="msg.type === 'audio'" class="audio-message">
-          <audio controls [src]="msg.content"></audio>
+<<<<<<< HEAD
+          <audio contro~~ls [src]="msg.content"></audio>
           <div class="time">{{ msg.time | date:'shortTime'}}</div>
         </div>
 
@@ -80,12 +78,26 @@
           <img [src]="'data:image/png;base64,' + msg.content"
          alt="Image"
          style="max-width: 200px; border-radius: 8px;" />
+=======
+          <audio controls [src]="msg.body"></audio>
+          <div class="createdOn">{{ msg.createdOn | date:'shortTime'}}</div>
+        </div>
+
+        <div *ngIf="msg.type === 'image'" class="image-message">
+          <img [src]="msg.body" alt="Uploaded Image" />
+          <div class="createdOn">{{ msg.createdOn }}</div>
+>>>>>>> f9d9e179fb64c8b782876be197815724c775457c
         </div>
 
         <div *ngIf="msg.type === 'file'" class="file-message">
           <mat-icon>insert_drive_file</mat-icon>
+<<<<<<< HEAD
           <span> {{ msg.attachmentId }}</span>
           <div class="time">{{ msg.time | date:'shortTime' }}</div>
+=======
+          <span> {{ msg.content }}</span>
+          <div class="createdOn">{{ msg.createdOn | date:'shortTime' }}</div>
+>>>>>>> f9d9e179fb64c8b782876be197815724c775457c
         </div>
 
         <button class="menu-btn" *ngIf="msg.showMenu" (click)="toggleMenu(msg, $event)">⋯</button>
@@ -156,9 +168,9 @@
     </div>
 
     <div class="chat-input">
-      <input type="text" [(ngModel)]="messageInput " (ngModelChange)="updateSafeMessage()" placeholder="Write a message"
+      <input type="text" [(ngModel)]="messageInput"  placeholder="Write a message"
         class="message-input" />
-      <div [innerHTML]="safeMessage"> </div>
+
     </div>
 
 

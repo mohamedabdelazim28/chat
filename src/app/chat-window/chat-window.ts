@@ -1,25 +1,24 @@
-import { ChatService, ChatThread } from './../services/chat-service';
+import { ChatService, ChatThread  } from './../services/chat-service';
 import { Component, ElementRef, inject, OnInit, ViewChild, HostListener, Input, ChangeDetectorRef, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
-import { map, Observable } from 'rxjs';
+import { BehaviorSubject, map, Observable } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { EventEmitter } from '@angular/core';
 
-type UiChatThread = ChatThread & {
-  messageId?: number;
+type UiChatThread = {
+  messageId: string;
   showMenu?: boolean;
   menuOpen?: boolean;
   showReactions?: boolean;
   isEditing?: boolean;
   editBody?: string;
-  msgId?: string;
   messages?: any[];
   voiceMessages?: any[];
   sender?: string;
   content?: string;
-  time?: string;
+  createdOn?: Date | string;
   avatar?: string;
   type?: string;
   name?: string;
@@ -28,6 +27,11 @@ type UiChatThread = ChatThread & {
   confirmDelete?: boolean;
   deletedForEveryone?: boolean;
   deletedForMe?: boolean;
+  userId: string | number;
+  photo: string;
+   time?: Date | string;
+  attachmentId?: string;
+
 };
 
 @Component({
@@ -42,33 +46,36 @@ export class ChatWindowcomponent implements OnInit {
 
   private chatService = inject(ChatService);
   private SelectedUserId = this.chatService.SelectedUserId;
-  myMessages$;
+  messagesSubject = new BehaviorSubject<UiChatThread[]>([]);
+  messages$: Observable<UiChatThread[]> = this.messagesSubject.asObservable();
   public messages: any[] = [];
   public myUserId = 534;
+  public imageUrl: string | null = null;
+
   constructor(private cdr: ChangeDetectorRef, private sanitizer: DomSanitizer) { }
-  baseURL = "https://devbe.ariseorganization.com"
-  isChatWindowOpen: boolean = false;
+
+  baseURL = 'https://devbe.ariseorganization.com';
 
   availableReactions: any[] = [];
-
   @Input() selectedChatId: string | null = null;
   @Input() isMobile: boolean = false;
   @Output() backToList = new EventEmitter<void>();
 
+  isChatWindowOpen = false;
  openChat(chatId: string) {
   this.selectedChatId = chatId;
   this.isChatWindowOpen = true;
 }
 
 goBackToChatList() {
-  this.backToList.emit(); 
+  this.backToList.emit();
 }
 
   isImage(path: string): boolean {
     return /\.(jpg|jpeg|png|gif)$/i.test(path);
   }
 
-  
+
 
   getImageUrl(path: string): string {
     return `${this.baseURL}/${path}`;
@@ -79,15 +86,17 @@ goBackToChatList() {
 
     this.chatService.getAllReactions().subscribe({
       next: (res: any) => {
-        console.log('Reactions API response', res)
         this.availableReactions = res.data;
       },
-      error: (err) => console.log('Error fetching reactions', err)
+      error: (err) => console.log('Error fetching reactions', err),
     });
+
+
+
 
     console.log('SelectedUserId', this.SelectedUserId)
 
-    this.SelectedUserId 
+    this.SelectedUserId
       .subscribe((userId) => {
         console.log('userid', userId)
         this.messages = [];
@@ -101,13 +110,10 @@ goBackToChatList() {
                   return {
                     messageId: msg.messageId ?? msg.id,
                     sender: msg.fromUser.id === this.myUserId ? 'You' : msg.fromUser.firstName + ' ' + msg.fromUser.lastName,
-                    content: msg.type === 'image'
-                      ? `data:image/jpeg;base64,${msg.body}`
-                      : msg.body,
+                    content: msg.body,
                     time: msg.createdOn,
                     avatar: msg.fromUser.photo,
-                    type: msg.type,
-                    name: msg.fromUser.firstName + ' ' + msg.fromUser.lastName,
+                    type: "text",
                   };
 
                 })
@@ -137,27 +143,17 @@ goBackToChatList() {
   safecontent: SafeHtml = '';
   messageEmoji: string = '';
   emojiInput: string = '';
-  imageUrl: string | null = null;
-
-
 
   // Emoji
   toggleEmojiPicker() {
     this.showEmojiPicker = !this.showEmojiPicker;
   }
   addEmoji(reaction: any) {
-    this.messageEmoji = `<img src="${reaction.icon}" width="20" height="20"/>`;
-
-    console.log("reaction", reaction);
-    this.updateSafeMessage();
     this.showEmojiPicker = false;
-    this.emojiInput = reaction.id
+    this.emojiInput = reaction.id;
   }
 
-  updateSafeMessage() {
-    this.safeMessage = this.sanitizer.bypassSecurityTrustHtml(this.messageEmoji);
-  }
-
+  // ✅ Send Message
   sendMessage() {
     if (this.messageInput.trim() || this.imageUrl) {
       const payload = {
@@ -208,7 +204,6 @@ goBackToChatList() {
       });
     }
   }
-
   // Attachments
   toggleAttachmentMenu() {
     this.showAttachmentMenu = !this.showAttachmentMenu;
@@ -227,51 +222,43 @@ goBackToChatList() {
         sender: 'You',
         name: 'You',
         photo: 'assets/imges/Ellipse 514.svg',
-        createdOn: new Date(),
+        createdOn: new Date().toISOString(),
         unreadCount: 0,
         totalCount: 1,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        msgId: Date.now().toString() + '_' + Math.random().toString(36).slice(2),
       };
 
       if (file.type.startsWith('image/')) {
-
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64Image = reader.result as string;
-
-          const payload = {
-            userId: this.SelectedUserId.value ?? 694,
-            body: base64Image,
-            voiceFileId: null,
-            attachmentId: null,
-            groupId: null,
-            messageCode: "",
-          };
-
-          this.chatService.sendNewMessage(payload).subscribe({
-            next: () => {
-              this.messages.push({
-                ...base,
-                content: base64Image,
-                type: 'image',
-                messages: [
-                  {
-                    userId: base.userId,
-                    body: base64Image,
-                    type: 'image',
-                    time: base.time!,
-                    photo: base.photo,
-                  },
-                ],
-              });
+        this.messages.push({
+          ...base,
+          body: fileUrl,
+          lastMessage: fileUrl,
+          messages: [
+            {
+              userId: 694,
+              body: fileUrl,
+              type: 'image',
+              time: new Date(),
+              photo: 'assets/imges/Ellipse 514.svg',
             },
-            error: (err) => {
-              console.error('Error sending image message:', err);
+          ],
+          type: 'image',
+        });
+      } else {
+        this.messages.push({
+          ...base,
+          body: file.name,
+          lastMessage: file.name,
+          messages: [
+            {
+              userId: 694,
+              body: file.name,
+              type: 'file',
+              time: new Date(),
+              photo: 'assets/imges/Ellipse 514.svg',
             },
-          });
-        };
-        reader.readAsDataURL(file);
+          ],
+          type: 'file',
+        });
       }
     }
   }
@@ -281,7 +268,6 @@ goBackToChatList() {
   mediaRecorder: any;
   audioChunks: any[] = [];
   isRecording: boolean = false;
-  voiceMessages: any[] = [];
 
   async startRecording() {
     try {
@@ -291,7 +277,9 @@ goBackToChatList() {
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+      this.mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus',
+      });
       this.audioChunks = [];
 
       this.mediaRecorder.ondataavailable = (event: any) => {
@@ -301,33 +289,33 @@ goBackToChatList() {
       };
 
       this.mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm;codecs=opus' });
+        const audioBlob = new Blob(this.audioChunks, {
+          type: 'audio/webm;codecs=opus',
+        });
         const audioUrl = URL.createObjectURL(audioBlob);
 
-        const base = {
+        const newMsg: UiChatThread = {
           userId: 694,
           sender: 'You',
           name: 'You',
           photo: 'assets/imges/Ellipse 514.svg',
           body: audioUrl,
-          message: '[Voice Message]',
+          type: 'audio',
+          messageId: Date.now().toLocaleString(),
           messages: [
             {
               userId: 694,
               body: audioUrl,
               type: 'audio',
-              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              createdOn: new Date().toISOString(),
               photo: 'assets/imges/Ellipse 514.svg',
             },
           ],
-          createdOn: new Date(),
-          unreadCount: 0,
-          totalCount: 1,
-          type: 'audio',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          createdOn: new Date().toISOString()
         };
 
-        this.voiceMessages.push(base);
+        const current = this.messagesSubject.value;
+        this.messagesSubject.next([newMsg, ...current]);
       };
 
       this.mediaRecorder.start();
@@ -352,34 +340,41 @@ goBackToChatList() {
     }
   }
 
-  get reversedMessages() {
-    return [...this.messages].reverse();
-  }
-
+  // UI helpers
   @HostListener('document:click', ['$event'])
   clickOutside(event: Event) {
-    if (!(event.target as HTMLElement).closest('.message-menu') &&
-      !(event.target as HTMLElement).closest('.reaction-picker')) {
+    if (
+      !(event.target as HTMLElement).closest('.message-menu') &&
+      !(event.target as HTMLElement).closest('.reaction-picker')
+    ) {
       this.closeAllMenus();
     }
   }
 
   closeAllMenus() {
-    this.messages.forEach((m) => {
-      m.menuOpen = false;
-      m.showReactions = false;
-    });
+    const updated = this.messagesSubject.value.map((m) => ({
+      ...m,
+      menuOpen: false,
+      showReactions: false,
+    }));
+    this.messagesSubject.next(updated);
   }
 
   toggleMenu(msg: UiChatThread, event: Event) {
     event.stopPropagation();
-    this.closeAllMenus();
+    !msg.showMenu ? this.closeAllMenus() : null;
     msg.menuOpen = true;
+    msg.showMenu = !msg.showMenu
+
   }
 
   copyMessage(msg: UiChatThread) {
     const text =
-      (!msg.type || msg.type === 'text') ? (msg.body ?? '') : (typeof msg.body === 'string' ? msg.body : '');
+      !msg.type || msg.type === 'text'
+        ? msg.body ?? ''
+        : typeof msg.body === 'string'
+          ? msg.body
+          : '';
     navigator.clipboard.writeText(text || '');
     msg.menuOpen = false;
   }
@@ -393,11 +388,9 @@ goBackToChatList() {
   }
 
   saveEdit(msg: UiChatThread) {
-  if (typeof msg.editBody === 'string') {
-    const newText = msg.editBody;
+    if (typeof msg.editBody === 'string') {
 
-    msg.body = newText;
-    msg.content = newText;
+      msg.body = msg.editBody;
 
     if (Array.isArray(msg.messages) && msg.messages.length) {
       const lastIndex = msg.messages.length - 1;
@@ -406,32 +399,23 @@ goBackToChatList() {
 
         msg.messages = [
           ...msg.messages.slice(0, lastIndex),
-          { ...last, body: newText },
+          { ...last, body:  msg.editBody },
         ];
       }
     }
 
-    msg.isEditing = false;
+      msg.isEditing = false;
+      this.chatService.editMessage(Number(msg.messageId), msg.editBody).subscribe({
+        next: (res: any) => {
+          console.log('Message updated on server', res);
+        },
+        error: (err) => {
+          console.error('Error updating message:', err);
 
-
-    this.messages = this.messages.map(m =>
-      (m.messageId === msg.messageId) ? { ...m, ...msg } : m
-    );
-
-    this.cdr.detectChanges();
-
-
-    this.chatService.editMessage(Number(msg.messageId), newText).subscribe({
-      next: (res: any) => {
-        console.log('Message updated on server', res)
-      },
-      error: (err) => {
-        console.error('Error updating message:', err);
-
-      }
-    });
+        }
+      });
+    }
   }
-}
 
 
   cancelEdit(msg: UiChatThread) {
@@ -439,15 +423,13 @@ goBackToChatList() {
     msg.editBody = msg.body;
   }
 
-  deleteTarget: UiChatThread | null = null;
-
-  confirmDelete(msg: any, type: 'everyone' | 'me') {
+  confirmDelete(msg: UiChatThread, type: 'everyone' | 'me') {
     if (type === 'everyone') {
       this.chatService.deleteMessage(msg.messageId).subscribe({
         next: () => {
           msg.deletedForEveryone = true;
           msg.deletedForMe = false;
-          msg.content = '';
+          msg.content = ''; // نخفي الرسالة الأصلية
         }
       });
     } else if (type === 'me') {
@@ -455,12 +437,17 @@ goBackToChatList() {
         next: () => {
           msg.deletedForMe = true;
           msg.deletedForEveryone = false;
-          msg.content = ''; // نخفي الرسالة الأصلية
-        }
+          msg.content = "";
+          const newMessages = this.messagesSubject.value.map(m =>
+            m.messageId === msg.messageId ? msg : m
+          );
+          this.messagesSubject.next(newMessages);
+        },
       });
     }
     msg.confirmDelete = false;
   }
+
   openReactions(msg: UiChatThread, event: Event) {
     event.stopPropagation();
     this.closeAllMenus();
@@ -468,24 +455,18 @@ goBackToChatList() {
   }
 
   setReaction(msg: UiChatThread, reaction: any) {
-    console.log(">>> setReaction msg:", msg);
-    console.log(">>> msg.id:", msg.id);
     const payload = {
       messageId: Number(msg.messageId ?? 0),
       userId: this.myUserId,
-      reactionId: reaction.id
+      reactionId: reaction.id,
     };
 
     this.chatService.addMessageReaction(payload).subscribe({
       next: () => {
-        if (!msg.reactions) msg.reactions = [];
         msg.reactions = [reaction];
         msg.showReactions = false;
       },
-      error: (err) => console.error('Error adding reaction:', err)
+      error: (err) => console.error('Error adding reaction:', err),
     });
   }
-
-
-
 }

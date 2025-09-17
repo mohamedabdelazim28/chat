@@ -27,7 +27,7 @@ export class ChatService {
 
   private http = inject(HttpClient);
   private baseURL = 'https://devbe.ariseorganization.com';
-  private jwtToken = "Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoic2FtaXJhIGhhc3NhbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiNTM0IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic2FtaXJhaGFzc2FubjQ0QGdtYWlsLmNvbSIsInVpZCI6IjUzNCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkZhbWlseSBNZW1iZXIiLCJleHAiOjE3ODgxMDU1MDYsImlzcyI6IklkZW50aXR5IiwiYXVkIjoiSWRlbnRpdHlVc2VyIn0.JJJGH5xbXFP5pn42veFK-u510gwn4jOlelE03JRe9Xk";
+  private jwtToken = "Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoic2FtaXJhIGhhc3NhbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiNTM0IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic2FtaXJhaGFzc2FubjQ0QGdtYWlsLmNvbSIsInVpZCI6IjUzNCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkZhbWlseSBNZW1iZXIiLCJleHAiOjE3NTgxMDc5OTUsImlzcyI6IklkZW50aXR5IiwiYXVkIjoiSWRlbnRpdHlVc2VyIn0.Ndq7pFlIdSuJlL2EVRuULk3Oj1jEmFONIlor6dB4Gi4";
   conversations: any[] = [];
 
   sendNewMessage(payload: {
@@ -106,7 +106,7 @@ export class ChatService {
     });
   }
 
-  deleteMessage(messageId: number) {
+  deleteMessage(messageId: string | number) {
   const params = new HttpParams().set('MessageId', messageId.toString());
 
   return this.http.delete(`${this.baseURL}/api/Message/DeleteMessage`, {
@@ -115,7 +115,7 @@ export class ChatService {
   });
 }
 
-deleteForMe(messageId: number) {
+deleteForMe(messageId: string | number) {
   const params = new HttpParams().set('MessageId', messageId.toString());
 
   return this.http.delete(`${this.baseURL}/api/Message/DeleteMessageFromMe`, {
