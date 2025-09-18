@@ -1,18 +1,8 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ChatService } from '../services/chat-service';
-import { map, Observable } from 'rxjs';
-
-interface ChatPreview {
-  userId: number;
-  name: string;
-  photo: string;
-  lastMessage: string;
-  lastMessageTime: Date;
-  unreadCount: number;
-  totalCount: number; // 👈 جديد
-}
+import { ChatService, ChatThread } from '../services/chat-service';
+import { EventEmitter } from '@angular/core';
 
 @Component({
   selector: 'app-chat-list',
@@ -22,75 +12,130 @@ interface ChatPreview {
   styleUrls: ['./chat-list.component.scss']
 })
 export class ChatListComponent implements OnInit {
-  private chatService = inject(ChatService);
-
-  conversations$!: Observable<ChatPreview[]>;
+  chats: ChatThread[] = [];
+  displayedChats: ChatThread[] = [];
+  totalRecords = 0;
+  limit = 100;
+  page = 1;
+  isLoading = false;
 
   activeFilter: string = 'all';
   searchTerm: string = '';
+  selectedChat: any = null;
 
-  ngOnInit() {
-    this.conversations$ = this.chatService.getusermessage(10, 1).pipe(
-      map((res: any) => {
-        const grouped = new Map<number, ChatPreview>();
+  @Input() selectedChatId: string | null = null;
+  @Output() chatSelected = new EventEmitter<string>();
 
-        res.data.forEach((msg: any) => {
-          const userId = msg.fromUser.id;
 
-          if (!grouped.has(userId)) {
-            grouped.set(userId, {
-              userId,
-              name: `${msg.fromUser.firstName} ${msg.fromUser.lastName}`,
-              photo: msg.fromUser.photo,
-              lastMessage: msg.body,
-              lastMessageTime: new Date(msg.createdOn),
-              unreadCount: msg.isReaded ? 0 : 1,
-              totalCount: 1
-            });
+  onChatClick(chatId: string) {
+    this.chatSelected.emit(chatId);
+  }
+
+  getMessageDate(date: string) {
+    return new Date(date + 'Z')
+  }
+
+
+  onSelectChat(chatId: string) {
+    console.log('Chat clicked:', chatId);
+    this.chatSelected.emit(chatId);
+  }
+
+  private chatService = inject(ChatService);
+  constructor(private cdr: ChangeDetectorRef) { }
+
+  ngOnInit(): void {
+    this.loadConversations();
+    this.chatService.getAllReactions().subscribe({
+      next: (res: any) => {
+        this.chatService.availableReactions.next(res.data);
+      },
+      error: (err) => console.log('Error fetching reactions', err),
+    });
+  }
+
+  loadConversations(loadMore: boolean = false): void {
+    if (this.isLoading) return;
+    this.isLoading = true;
+    this.chatService.getusermessage(this.limit, this.page)
+      .subscribe({
+        next: ({ data, totalCount }) => {
+          if (loadMore) {
+            this.chats = [...this.chats, ...data];
           } else {
-            const existing = grouped.get(userId)!;
-
-
-            if (new Date(msg.createdOn) > existing.lastMessageTime) {
-              existing.lastMessage = msg.body;
-              existing.lastMessageTime = new Date(msg.createdOn);
-            }
-
-
-            if (!msg.isReaded) {
-              existing.unreadCount += 1;
-            }
-
-
-            existing.totalCount += 1;
+            this.chats = data;
           }
-        });
 
-        return Array.from(grouped.values());
-      })
-    );
+          this.totalRecords = totalCount;
+
+          this.displayedChats = this.filterChats(this.chats);
+          this.cdr.detectChanges();
+
+          this.isLoading = false;
+          console.log(data, totalCount);
+        },
+        error: (err) => {
+          console.error('Error loading conversations:', err);
+          if (!this.chats.length) {
+            // this.chats = [...this.messages];
+            this.displayedChats = this.filterChats(this.chats);
+            this.cdr.detectChanges();
+          }
+          this.isLoading = false;
+        }
+      });
   }
 
-  setFilter(filter: string) {
+  getusermessage() {
+
+  }
+
+
+
+  loadNextPage(): void {
+    this.page++;
+    this.loadConversations(true);
+  }
+
+  onScroll(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (target.scrollTop + target.clientHeight >= target.scrollHeight - 50) {
+      if (!this.isLoading) this.loadNextPage();
+    }
+  }
+
+  setFilter(filter: string): void {
     this.activeFilter = filter;
+    this.displayedChats = this.filterChats(this.chats);
   }
 
-
-  filterChats(chats: ChatPreview[]): ChatPreview[] {
-    let filtered = chats;
+  filterChats(chats: ChatThread[]): ChatThread[] {
+    let filtered = [...chats];
 
     if (this.activeFilter === 'unread') {
-      filtered = filtered.filter(c => c.unreadCount > 0);
+      filtered = filtered.filter((c) => c.numberOfUnread > 0);
+    } else if (this.activeFilter === 'groups') {
+      filtered = filtered.filter((c: any) => c.isGroup);
     }
 
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
-      filtered = filtered.filter(c =>
-        c.name.toLowerCase().includes(term) ||
-        c.lastMessage.toLowerCase().includes(term)
+      filtered = filtered.filter(
+        (c) =>
+          c.firstName?.toLowerCase().includes(term) ||
+          c.message?.toLowerCase().includes(term) ||
+          c.lastName?.toLowerCase().includes(term)
       );
     }
 
     return filtered;
   }
+
+  selectChat(userId: number): void {
+    console.log(userId)
+    this.chatService.setSelectedUser(userId);
+    this.chatSelected.emit(userId.toString());
+  }
+
+
 }

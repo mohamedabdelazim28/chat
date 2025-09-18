@@ -1,6 +1,95 @@
-<div class="app-container">
-    <app-sidebar ></app-sidebar>
-  <app-navbar></app-navbar>
-  <app-chat-list></app-chat-list>
-  <app-chat-window></app-chat-window>
+<!-- app.component.html -->
+<div class="app-container" [ngClass]="getContainerClasses()" (click)="onOverlayClick()">
+
+  <!-- Sidebar -->
+  <app-sidebar
+    [ngClass]="{ 'sidebar-open': isSidebarOpen }"
+    (click)="$event.stopPropagation()">
+  </app-sidebar>
+
+  <!-- Navigation Bar -->
+  <app-navbar (click)="$event.stopPropagation()">
+    <div class="navbar-content">
+      <!-- Back button (mobile only, when in chat window) -->
+      <button
+        *ngIf="isMobile && isChatWindowOpen"
+        class="back-button"
+        (click)="goBackToChatList()"
+        aria-label="Go back to chat list">
+        <span class="sr-only">Go back to chat list</span>
+        ←
+      </button>
+
+      <!-- Logo/Title -->
+      <div class="navbar-brand">
+        <h2>Chat App</h2>
+      </div>
+
+      <!-- Mobile Navigation Buttons (only show when not in chat window) -->
+      <div class="mobile-nav-buttons" *ngIf="isMobile && !isChatWindowOpen">
+        <button
+          class="menu-toggle"
+          (click)="toggleSidebar()"
+          [attr.aria-label]="isSidebarOpen ? 'Close menu' : 'Open menu'"
+          [attr.aria-expanded]="isSidebarOpen">
+          <span class="sr-only">{{ isSidebarOpen ? 'Close menu' : 'Open menu' }}</span>
+          ☰
+        </button>
+
+        <button
+          class="chat-toggle"
+          (click)="toggleChatList()"
+          [attr.aria-label]="isChatListOpen ? 'Close chat list' : 'Open chat list'"
+          [attr.aria-expanded]="isChatListOpen">
+          <span class="sr-only">{{ isChatListOpen ? 'Close chat list' : 'Open chat list' }}</span>
+          💬
+        </button>
+      </div>
+
+      <!-- Tablet Navigation Button -->
+      <div *ngIf="isTablet && !isMobile">
+        <button
+          class="menu-toggle"
+          (click)="toggleSidebar()"
+          [attr.aria-label]="isSidebarOpen ? 'Close sidebar' : 'Open sidebar'"
+          [attr.aria-expanded]="isSidebarOpen">
+          <span class="sr-only">{{ isSidebarOpen ? 'Close sidebar' : 'Open sidebar' }}</span>
+          ☰
+        </button>
+      </div>
+
+      <!-- Search bar for larger screens -->
+      <div class="navbar-search" *ngIf="!isMobile">
+        <input
+          type="search"
+          placeholder="Search..."
+          class="search-input">
+      </div>
+
+      <!-- User actions -->
+      <div class="navbar-actions">
+        <button class="notification-btn" aria-label="Notifications">🔔</button>
+        <div class="user-avatar">👤</div>
+      </div>
+    </div>
+  </app-navbar>
+
+  <!-- Chat List -->
+  <app-chat-list
+    *ngIf="!selectedChatId || !isMobile"
+    [ngClass]="{ 'chat-list-open': isChatListOpen }"
+    [selectedChatId]="selectedChatId"
+    (chatSelected)="onChatSelected($event)"
+    (click)="$event.stopPropagation()">
+  </app-chat-list>
+
+  <!-- Chat Window -->
+  <app-chat-window
+  *ngIf="!isMobile || (isMobile && isChatWindowOpen)"
+  [isMobile]="isMobile"
+  [selectedChatId]="selectedChatId"
+  (backToList)="goBackToChatList()"
+  (click)="$event.stopPropagation()">
+</app-chat-window>
+
 </div>

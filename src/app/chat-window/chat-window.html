@@ -1,12 +1,14 @@
-<div class="chat-window">
-  <!-- Header -->
+<div class="chat-window" (click)="closeAllMenus()">
   <div class="chat-window-header">
+    <button *ngIf="isMobile" class="back-button" (click)="goBackToChatList()" aria-label="Go back to chat list">
+      <mat-icon>keyboard_arrow_left</mat-icon>
+    </button>
     <div class="contact-info">
       <div class="contact-avatar">
         <img src="assets/imges/Avatar.svg" alt="Ronald Richards" />
       </div>
       <div class="contact-details">
-        <div class="contact-name">Ronald Richards</div>
+        <div class="contact-name"> Ronald Richards </div>
         <div class="contact-status">Last seen 6:00 pm</div>
       </div>
     </div>
@@ -16,11 +18,18 @@
     </div>
   </div>
 
-
   <div class="chat-messages">
-    <div *ngFor="let msg of messages"
-         class="message"
-         [ngClass]="{ 'my-message': msg.sender === 'You', 'other-message': msg.sender !== 'You' }">
+
+    <div class="empty-chat-state" *ngIf="!(messages$ | async)?.length">
+      <div class="empty-chat-content">
+        <img src="assets/imges/chat-iWoW9HWbFw.svg" alt="No messages yet" class="empty-chat-image" />
+        <h3>No messages yet</h3>
+        <p>Start a conversation with Ronald Richards</p>
+      </div>
+    </div>
+    <div *ngFor="let msg of (messages$ | async);  " class="message"
+      [ngClass]="{ 'my-message': msg.sender === 'You', 'other-message': msg.sender !== 'You' }"
+      (mouseenter)="msg.showMenu = true" (mouseleave)="msg.showMenu = false">
 
       <div class="avatar" *ngIf="msg.sender !== 'You'">
         <img [src]="msg.avatar" alt="Avatar" />
@@ -28,32 +37,85 @@
 
       <div class="msg-content">
 
-        <div *ngIf="!msg.type || msg.type === 'text'" class="text">
-          {{ msg.content }}
-          <div class="time">{{ msg.time }}</div>
+        <div class="deleted-text" *ngIf="msg.deletedForEveryone">
+          This message was deleted for everyone
         </div>
 
-        <div *ngIf="msg.type === 'audio'" class="audio-message">
-          <audio controls [src]="msg.content"></audio>
-          <div class="time">{{ msg.time }}</div>
+        <div class="deleted-text" *ngIf="msg.deletedForMe">
+          This message was deleted for you
         </div>
 
-        <div *ngIf="msg.type === 'image'" class="image-message">
-          <img [src]="msg.content" alt="Uploaded Image" />
-          <div class="time">{{ msg.time }}</div>
+        <div class="text">
+          <ng-container *ngIf="!msg.isEditing; else editTpl">
+            <ng-container *ngIf="msg.type==='text'; else image">
+              {{msg.content}}
+            </ng-container>
+          </ng-container>
+          <ng-template #editTpl>
+            <input [(ngModel)]="msg.editBody" class="edit-input" />
+            <div class="edit-actions">
+              <button class="save-btn" (click)="saveEdit(msg)">Save</button>
+              <button class="cancel-btn" (click)="cancelEdit(msg)">Cancel</button>
+            </div>
+          </ng-template>
+          <ng-template #image>
+            <ng-container *ngIf="msg.messageCode;else photo">
+              {{msg.content}}
+              <img [src]="msg.reaction" alt="img" width="40px" height="40px" />
+            </ng-container>
+            <ng-template #photo>
+              <img [src]="msg.content" alt="img" width="40px" height="40px" />
+            </ng-template>
+          </ng-template>
+
+          <div class="createdOn">{{ msg.createdOn | date:'shortTime' }}</div>
         </div>
 
-        <div *ngIf="msg.type === 'file'" class="file-message">
-          <mat-icon>insert_drive_file</mat-icon>
-          <span>{{ msg.content }}</span>
-          <div class="time">{{ msg.time }}</div>
+        <!-- <audio controls [src]="msg.body"></audio>
+        <div class="createdOn">{{ msg.createdOn | date:'shortTime'}}</div> -->
+      </div>
+
+      <div *ngIf="msg.type === 'file'" class="file-message">
+        <mat-icon>insert_drive_file</mat-icon>
+        <span> {{ msg.content }}</span>
+        <div class="createdOn">{{ msg.createdOn | date:'shortTime' }}</div>
+      </div>
+
+      <button class="menu-btn" *ngIf="msg.showMenu" (click)="toggleMenu(msg, $event)">⋯</button>
+      <div class="dropdown" *ngIf="msg.menuOpen">
+        <button (click)="openReactions(msg, $event)"><mat-icon>favorite</mat-icon></button>
+        <button (click)="copyMessage(msg)"><mat-icon>content_copy</mat-icon></button>
+        <button (click)="editMessage(msg)">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button (click)="msg.confirmDelete = true">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+
+      <div class="delete-popup" *ngIf="msg.confirmDelete">
+        <p>sure you want to delete this message</p>
+        <div class="delete-btn">
+          <button class="for-everyone" (click)="confirmDelete(msg, 'everyone')">delete for everyone</button>
+          <button class="for-me" (click)="confirmDelete(msg, 'me')">delete for me</button>
+          <button class="cancel" (click)="msg.confirmDelete = false">cancel</button>
         </div>
       </div>
+
+      <div class="reaction-picker" *ngIf=" msg.showReactions ">
+        <div class="reaction" *ngFor="let r of availableReactions$ | async" (click)="setReaction(msg, r)">
+          <img [src]="r.icon" [alt]="r.name" />
+        </div>
+      </div>
+
+      <div class="reactions-container" *ngIf="msg.reactions">
+        <img class="reaction" *ngFor="let r of msg.reactions" [src]="r.iconUrl" [alt]="r.name" width="16"
+          height="16" />wwwqwqwq
+      </div>
+
     </div>
   </div>
-
   <div class="chat-input-container">
-
     <div class="attachment">
       <button class="attachment-btn" (click)="toggleAttachmentMenu()">
         <mat-icon>add</mat-icon>
@@ -68,12 +130,7 @@
         </button>
       </div>
 
-      <input
-        #fileInput
-        type="file"
-        (change)="handleFileUpload($event)"
-        style="display: none"
-      />
+      <input #fileInput type="file" (change)="handleFileUpload($event)" style="display: none" />
     </div>
 
     <div class="emoji">
@@ -82,29 +139,27 @@
       </button>
 
       <div *ngIf="showEmojiPicker" class="emoji-picker">
-        <emoji-mart (emojiSelect)="addEmoji($event)" title="Pick an emoji" set="apple"></emoji-mart>
+        <div class="reaction" *ngFor="let r of availableReactions$ | async" (click)="addEmoji(r)">
+          <img [src]="r.icon" [alt]="r.name" width="24" height="24" />
+        </div>
       </div>
     </div>
 
     <div class="chat-input">
-      <input
-        type="text"
-        [(ngModel)]="messageInput"
-        placeholder="Write a message"
-        class="message-input"
-      />
+      <input type="text" [(ngModel)]="messageInput" placeholder="Write a message" class="message-input" />
+      <div class="message-input" contenteditable="true" [innerHTML]="safeMessageInput"></div>
     </div>
 
-    <!-- Record Button -->
-    <button class="record-btn"
-      (mousedown)="startRecording()"
-      (mouseup)="stopRecording()"
-      (touchstart)="startRecording()"
-      (touchend)="stopRecording()">
-      <mat-icon>{{ isRecording ? 'stop' : 'mic' }}</mat-icon>
-    </button>
 
-    <!-- Send Button -->
-    <button class="send-btn" (click)="sendMessage()">➤</button>
+    <div *ngIf="isRecording" class="recording-indicator">
+      <mat-icon>mic</mat-icon> Recording...
+      <button (click)="stopRecording()">Stop</button>
+    </div>
+
+    <button class="send-btn" (click)="sendMessage()"><mat-icon>send</mat-icon></button>
+    <button class="record-btn" (click)="toggleRecording()">
+      <span *ngIf="!isRecording"><mat-icon>mic</mat-icon></span>
+      <span *ngIf="isRecording"><mat-icon>stop</mat-icon></span>
+    </button>
   </div>
 </div>

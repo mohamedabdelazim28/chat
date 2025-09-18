@@ -1,21 +1,129 @@
-import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { SidebarComponent } from './sidebar/sidebar';
 import { ChatListComponent } from './chat-list/chat-list';
-import { ChatWindow } from './chat-window/chat-window';
+import { ChatWindowcomponent } from './chat-window/chat-window';
 import { Navbar } from './navbar/navbar';
-import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-root',
+    selector: 'app-root',
   standalone: true,
   imports: [
     CommonModule,
     SidebarComponent,
     ChatListComponent,
-    ChatWindow,
+    ChatWindowcomponent,
     Navbar
   ],
   templateUrl: './app.html',
   styleUrls: ['./app.scss']
 })
-export class AppComponent {}
+export class AppComponent implements OnInit, OnDestroy {
+  isSidebarOpen = false;
+  isChatListOpen = false;
+  isMobile = false;
+  isTablet = false;
+  isChatWindowOpen = false;
+  selectedChatId: string | null = null;
+
+  constructor() {}
+
+  ngOnInit() {
+    this.checkScreenSize();
+  }
+
+  ngOnDestroy() {
+
+  }
+
+  @HostListener('window:resize', ['$event'])
+    onResize(event: any) {
+    this.checkScreenSize();
+
+    if (!this.isMobile && !this.isTablet) {
+      this.isSidebarOpen = false;
+      this.isChatListOpen = false;
+      this.isChatWindowOpen = false;
+    }
+  }
+
+  private checkScreenSize() {
+    const width = window.innerWidth;
+    this.isMobile = width <= 767;
+    this.isTablet = width > 767 && width <= 1023;
+  }
+
+  toggleSidebar() {
+    this.isSidebarOpen = !this.isSidebarOpen;
+
+    if (this.isMobile && this.isSidebarOpen) {
+      this.isChatListOpen = false;
+    }
+  }
+
+  toggleChatList() {
+    this.isChatListOpen = !this.isChatListOpen;
+
+    if (this.isMobile && this.isChatListOpen) {
+      this.isSidebarOpen = false;
+    }
+  }
+
+  closeSidebar() {
+    this.isSidebarOpen = false;
+  }
+
+  closeChatList() {
+    this.isChatListOpen = false;
+  }
+
+  onChatSelected(chatId: string) {
+      console.log('onChatSelected', { chatId, isMobile: this.isMobile });
+    this.selectedChatId = String(chatId);
+
+    if (this.isMobile) {                                  
+      this.isChatWindowOpen = true;
+          this.isChatListOpen = false;
+    }
+  }
+
+  openChat(chatId: number) {
+  this.selectedChatId = String(chatId);
+  this.isChatWindowOpen = true;   
+  }
+
+  goBackToChatList() {
+    if (this.isMobile) {
+      this.isChatListOpen = true;
+      this.isChatWindowOpen = false;
+      this.selectedChatId = null;
+    }
+  }
+
+  onOverlayClick() {
+    this.isSidebarOpen = false;
+    if (!this.isMobile){
+    this.isChatListOpen = false;
+    }
+  }
+
+  @HostListener('keydown.escape', ['$event'])
+  onEscapeKey(event: any) {
+    this.isSidebarOpen = false;
+    this.isChatListOpen = false;
+
+    if (this.isMobile && this.isChatWindowOpen) {
+      this.goBackToChatList();
+    }
+  }
+
+  getContainerClasses() {
+    return {
+      'sidebar-open': this.isSidebarOpen,
+      'chat-list-open': this.isChatListOpen,
+      'is-mobile': this.isMobile,
+      'is-tablet': this.isTablet,
+      'chat-window-open': this.isChatWindowOpen
+    };
+  }
+}
