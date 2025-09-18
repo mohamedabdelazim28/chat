@@ -1,4 +1,4 @@
-import { ChatService, Reaction } from './../services/chat-service';
+import { ChatService, ChatThread, Reaction } from './../services/chat-service';
 import {
   Component,
   ElementRef,
@@ -18,13 +18,14 @@ import { map, BehaviorSubject, Observable } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 type UiChatThread = {
-  messageId: string | number;
+  messageId: string;
   showMenu?: boolean;
   menuOpen?: boolean;
   showReactions?: boolean;
   isEditing?: boolean;
   editBody?: string;
   messages?: any[];
+  voiceMessages?: any[];
   sender?: string;
   content?: string;
   createdOn?: Date | string;
@@ -32,12 +33,15 @@ type UiChatThread = {
   type?: string;
   name?: string;
   body?: string;
-  reactions?: any[]; // depends on API shape
+  reactions?: Reaction[];
   confirmDelete?: boolean;
   deletedForEveryone?: boolean;
   deletedForMe?: boolean;
-  userId?: string | number;
-  messageCode?: number | string;
+  userId: string | number;
+  time?: Date | string;
+  attachmentId?: string;
+  photo?: string;
+  messageCode?: number;
   reaction?: string | null;
 };
 
@@ -49,211 +53,251 @@ type UiChatThread = {
   styleUrls: ['./chat-window.scss'],
 })
 export class ChatWindowcomponent implements OnInit {
-  @ViewChild('fileInput', { static: false }) fileInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
-  private chatService = inject(ChatService);
-  private SelectedUserId = this.chatService.SelectedUserId;
   messagesSubject = new BehaviorSubject<UiChatThread[]>([]);
   messages$: Observable<UiChatThread[]> = this.messagesSubject.asObservable();
-  public messages: UiChatThread[] = [];
-  private cdRef = inject(ChangeDetectorRef);
-  private sanitizer = inject(DomSanitizer);
+  public messages: any[] = [];
+  safeMessageInput: SafeHtml = '';
 
   public myUserId = 534;
+  public imageUrl: string | null = null;
+
   baseURL = 'https://devbe.ariseorganization.com';
-  lastSeen: string | null = null;
+  public SelectedUserId = new BehaviorSubject<number | null>(null);
+  public availableReactions$ = new BehaviorSubject<Reaction[]>([]);
 
-  availableReactions$ = this.chatService.availableReactions;
+  constructor(private chatService: ChatService, private sanitizer: DomSanitizer) {
+    this.availableReactions$ = this.chatService.availableReactions;
+    this.SelectedUserId = this.chatService.SelectedUserId;
+  }
 
-  @Input() selectedChatId: string | null = null;
   @Input() isMobile: boolean = false;
   @Output() backToList = new EventEmitter<void>();
 
-  isRecording = false;
-  messageInput = '';
-  showEmojiPicker = false;
-  showAttachmentMenu = false;
+  isChatWindowOpen = false;
+
+  messageInput: string = '';
+  showEmojiPicker: boolean = false;
+  showAttachmentMenu: boolean = false;
   emojiInput: string = '';
 
-  constructor() {}
+
+  goBackToChatList() {
+    this.backToList.emit();
+  }
 
   ngOnInit(): void {
-    // subscribe to selected user and load messages
     this.SelectedUserId.subscribe((userId) => {
       this.messagesSubject.next([]); // reset messages
-      this.messages = [];
       if (userId) {
         this.chatService.getChatByUserId(userId as number)
           .pipe(
             map((res: any) =>
               res.data.map((msg: any) => {
-                const isImage = !!(msg.body && /data:image|https?:\/\/.*\.(png|jpg|jpeg|gif)/i.test(msg.body));
-                const reactionIcon = msg.messageCode ? this.availableReactions$.value.find((r: any) => r.id == msg.messageCode)?.icon : null;
                 return {
                   messageId: msg.messageId ?? msg.id,
-                  sender: (msg.fromUser?.id === this.myUserId) ? 'You' : `${msg.fromUser?.firstName || ''} ${msg.fromUser?.lastName || ''}`,
+                  sender:
+                    msg.fromUser.id === this.myUserId
+                      ? 'You'
+                      : msg.fromUser.firstName + ' ' + msg.fromUser.lastName,
                   messageCode: msg.messageCode,
-                  content: msg.body && !isImage ? msg.body : '',
-                  body: isImage ? msg.body : (msg.body || ''),
-                  reaction: reactionIcon,
-                  reactions: msg.reactions || [],
+                  content: msg.body.includes("https://dwr9zlq9lexeu.cloudfront.net/Development") ? "" : msg.body,
+                  reaction: msg.messageCode ? this.availableReactions$.value.find(r => r.id == msg.messageCode)?.icon : "",
                   createdOn: new Date(msg.createdOn + 'Z'),
-                  avatar: msg.fromUser?.photo || 'assets/imges/Ellipse 514.svg',
-                  type: isImage ? 'image' : (msg.type || 'text'),
-                } as UiChatThread;
+                  avatar: msg.fromUser.photo,
+                  type: msg.body.includes("data:image/") || msg.messageCode ? 'image' : 'text',
+                }
               })
             )
           )
           .subscribe({
-            next: (msgs: UiChatThread[]) => {
-              // append newest at top (as original code did)
-              const combined = [...msgs, ...this.messagesSubject.value];
-              this.messagesSubject.next(combined);
+            next: (msgs: any[]) => {
+              const current = this.messagesSubject.value;
+              this.messagesSubject.next([...msgs, ...current].reverse());
             },
             error: (err) => console.error('Error loading conversations:', err),
           });
       }
     });
   }
-
-  // helper to update BehaviorSubject and local array
-  private updateMessage(updated: UiChatThread) {
-    const newList = this.messagesSubject.value.map((m) =>
-      m.messageId === updated.messageId ? { ...m, ...updated } : m
-    );
-    this.messagesSubject.next(newList);
-    this.cdRef.detectChanges();
-  }
-
-  // UI helpers
-  goBackToChatList() { this.backToList.emit(); }
-
-  isImage(path: string): boolean {
-    return !!path && /\.(jpg|jpeg|png|gif)/i.test(path);
-  }
-
-  getImageUrl(path: string) {
-    return `${this.baseURL}/${path}`;
-  }
-
-  toggleEmojiPicker(evt?: Event) {
-    if (evt) evt.stopPropagation();
+  // Emoji
+  toggleEmojiPicker() {
     this.showEmojiPicker = !this.showEmojiPicker;
-    if (this.showEmojiPicker) this.closeAllMenus();
   }
-
-  addEmoji(reaction: any) {
-    // add emoji to the messageInput (as reaction code) but no alt text
+  addEmoji(reaction: Reaction) {
     this.showEmojiPicker = false;
     this.emojiInput = String(reaction.id);
-    // optional: show a preview or directly send
-    const imgTag = `<img src="${reaction.icon}" alt="" width="20" height="20" style="vertical-align: middle;" />`;
-    // append sanitized preview inside input (or handle differently)
-    this.messageInput = this.messageInput ? (this.messageInput + ' ') : '';
-    // we keep a hidden emojiInput to send to API
+    const imgTag = `<img src="${reaction.icon}" alt="${reaction.name}" width="20" height="20" style="vertical-align: middle;" />`;
+    this.safeMessageInput = this.sanitizer.bypassSecurityTrustHtml(imgTag);
   }
 
+  // ✅ Send Message
   sendMessage() {
-    if ((!this.messageInput.trim() && !this.emojiInput) || !this.SelectedUserId.value) return;
+    if ((this.messageInput.trim() || this.emojiInput) && this.SelectedUserId.value) {
+      const payload = {
+        userId: this.SelectedUserId.value ?? 694,
+        body: this.messageInput,
+        voiceFileId: null,
+        attachmentId: null,
+        groupId: null,
+        messageCode: this.emojiInput ?? "",
+      };
 
-    const payload = {
-      userId: this.SelectedUserId.value,
-      body: this.messageInput,
-      voiceFileId: null,
-      attachmentId: null,
-      groupId: null,
-      messageCode: this.emojiInput || ''
-    };
+      this.chatService.sendNewMessage(payload).subscribe({
+        next: () => {
+          const newMsg = {
+            messageId: Date.now(),
+            userId: payload.userId,
+            sender: 'You',
+            name: 'You',
+            content: this.messageInput,
+            reaction: this.emojiInput ? this.availableReactions$.value.find(r => r.id === +this.emojiInput)!.icon : null,
+            messageCode: +this.emojiInput,
+            messages: [
+              {
+                userId: payload.userId,
+                body: this.messageInput,
+                reaction: this.emojiInput ? this.availableReactions$.value.find(r => r.id === +this.emojiInput)!.icon : "",
+                type: this.emojiInput ? 'image' : 'text',
+                createdOn: new Date().toISOString(),
+              },
+            ],
+            type: this.emojiInput ? 'image' : 'text',
+            createdOn: new Date().toISOString()
+          };
 
-    this.chatService.sendNewMessage(payload).subscribe({
-      next: (res: any) => {
-        // create local message using response if available
-        const newMsg: UiChatThread = {
-          messageId: res?.id ?? Date.now(),
-          userId: payload.userId,
-          sender: 'You',
-          name: 'You',
-          body: payload.body,
-          content: payload.body,
-          messageCode: payload.messageCode ? Number(payload.messageCode) : undefined,
-          reaction: payload.messageCode ? this.availableReactions$.value.find(r => r.id === +payload.messageCode)?.icon : null,
-          reactions: [],
-          type: payload.messageCode ? 'image' : 'text',
-          createdOn: new Date().toISOString(),
-          avatar: 'assets/imges/Ellipse 514.svg'
-        };
-        // prepend to list
-        this.messagesSubject.next([newMsg, ...this.messagesSubject.value]);
-        // reset inputs
-        this.messageInput = '';
-        this.emojiInput = '';
-        this.cdRef.detectChanges();
-      },
-      error: (err) => {
-        console.error('Failed sending message', err);
-        alert('Failed to send message');
-      }
-    });
+          this.messages = [...this.messagesSubject.value, newMsg];
+          this.messagesSubject.next(this.messages)
+          this.messageInput = '';
+          this.emojiInput = ''
+        },
+        error: (err) => {
+          console.error('Error sending message:', err);
+          alert('Failed to send message');
+        },
+      });
+    }
   }
-
-  // attachments
-  toggleAttachmentMenu(evt?: Event) {
-    if (evt) evt.stopPropagation();
+  // Attachments
+  toggleAttachmentMenu() {
     this.showAttachmentMenu = !this.showAttachmentMenu;
-    if (this.showAttachmentMenu) this.closeAllMenus();
   }
-
   triggerFileInput(type: string) {
     this.fileInput.nativeElement.accept = type;
     this.fileInput.nativeElement.click();
     this.showAttachmentMenu = false;
   }
-
   handleFileUpload(event: any) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const fileUrl = URL.createObjectURL(file);
+    const file = event.target.files[0];
+    if (file) {
+      const fileUrl = URL.createObjectURL(file);
+      const base = {
+        userId: this.SelectedUserId.value ?? 694,
+        sender: 'You',
+        name: 'You',
+        photo: 'assets/imges/Ellipse 514.svg',
+        createdOn: new Date().toISOString(),
+        unreadCount: 0,
+        totalCount: 1,
+      };
 
-    const newMsg: UiChatThread = {
-      messageId: Date.now(),
-      sender: 'You',
-      body: file.type.startsWith('image/') ? fileUrl : file.name,
-      type: file.type.startsWith('image/') ? 'image' : 'file',
-      createdOn: new Date().toISOString(),
-      avatar: 'assets/imges/Ellipse 514.svg',
-      reactions: []
-    };
-
-    this.messagesSubject.next([newMsg, ...this.messagesSubject.value]);
-    // optionally upload file to server here...
+      if (file.type.startsWith('image/')) {
+        this.messages.push({
+          ...base,
+          body: fileUrl,
+          lastMessage: fileUrl,
+          messages: [
+            {
+              userId: 694,
+              body: fileUrl,
+              type: 'image',
+              time: new Date(),
+              photo: 'assets/imges/Ellipse 514.svg',
+            },
+          ],
+          type: 'image',
+        });
+      } else {
+        this.messages.push({
+          ...base,
+          body: file.name,
+          lastMessage: file.name,
+          messages: [
+            {
+              userId: 694,
+              body: file.name,
+              type: 'file',
+              time: new Date(),
+              photo: 'assets/imges/Ellipse 514.svg',
+            },
+          ],
+          type: 'file',
+        });
+      }
+    }
   }
 
-  // recording (kept same)
+
+  // Audio Recording
   mediaRecorder: any;
   audioChunks: any[] = [];
+  isRecording: boolean = false;
 
   async startRecording() {
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Microphone not supported in this browser');
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.mediaRecorder = new MediaRecorder(stream);
+      this.mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus',
+      });
       this.audioChunks = [];
-      this.mediaRecorder.ondataavailable = (e: any) => { if (e.data.size) this.audioChunks.push(e.data); };
-      this.mediaRecorder.onstop = () => {
-        const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
-        const url = URL.createObjectURL(blob);
-        const newMsg: UiChatThread = {
-          messageId: Date.now(),
-          sender: 'You',
-          body: url,
-          type: 'audio',
-          createdOn: new Date().toISOString(),
-          avatar: 'assets/imges/Ellipse 514.svg'
-        };
-        this.messagesSubject.next([newMsg, ...this.messagesSubject.value]);
+
+      this.mediaRecorder.ondataavailable = (event: any) => {
+        if (event.data.size > 0) {
+          this.audioChunks.push(event.data);
+        }
       };
+
+      this.mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(this.audioChunks, {
+          type: 'audio/webm;codecs=opus',
+        });
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        const newMsg: UiChatThread = {
+          userId: 694,
+          sender: 'You',
+          name: 'You',
+          photo: 'assets/imges/Ellipse 514.svg',
+          body: audioUrl,
+          type: 'audio',
+          messageId: Date.now().toLocaleString(),
+          messages: [
+            {
+              userId: 694,
+              body: audioUrl,
+              type: 'audio',
+              createdOn: new Date().toISOString(),
+              photo: 'assets/imges/Ellipse 514.svg',
+            },
+          ],
+          createdOn: new Date().toISOString()
+        };
+
+        const current = this.messagesSubject.value;
+        this.messagesSubject.next([newMsg, ...current]);
+      };
+
       this.mediaRecorder.start();
       this.isRecording = true;
-    } catch (err) { console.error(err); alert('Mic access denied or not supported'); }
+    } catch (err) {
+      console.error('Error accessing microphone', err);
+    }
   }
 
   stopRecording() {
@@ -264,78 +308,94 @@ export class ChatWindowcomponent implements OnInit {
   }
 
   toggleRecording() {
-    this.isRecording ? this.stopRecording() : this.startRecording();
+    if (this.isRecording) {
+      this.stopRecording();
+    } else {
+      this.startRecording();
+    }
   }
 
-  // clicks outside -> close menus
+  // UI helpers
   @HostListener('document:click', ['$event'])
   clickOutside(event: Event) {
-    const el = event.target as HTMLElement;
-    if (!el.closest('.dropdown') && !el.closest('.reaction-picker') && !el.closest('.emoji-picker') && !el.closest('.attachment-menu')) {
+    if (
+      !(event.target as HTMLElement).closest('.message-menu') &&
+      !(event.target as HTMLElement).closest('.reaction-picker')
+    ) {
       this.closeAllMenus();
     }
   }
 
   closeAllMenus() {
-    const updated = this.messagesSubject.value.map((m) => ({ ...m, menuOpen: false, showReactions: false }));
+    const updated = this.messagesSubject.value.map((m) => ({
+      ...m,
+      menuOpen: false,
+      showReactions: false,
+    }));
     this.messagesSubject.next(updated);
-    this.cdRef.detectChanges();
   }
 
   toggleMenu(msg: UiChatThread, event: Event) {
     event.stopPropagation();
-    // toggle single menu and close others
-    const newList = this.messagesSubject.value.map((m) => {
-      if (m.messageId === msg.messageId) {
-        return { ...m, menuOpen: !m.menuOpen, showReactions: false };
-      }
-      return { ...m, menuOpen: false, showReactions: false };
-    });
-    this.messagesSubject.next(newList);
+    !msg.showMenu ? this.closeAllMenus() : null;
+    msg.menuOpen = true;
+    msg.showMenu = !msg.showMenu
+
   }
 
   copyMessage(msg: UiChatThread) {
-    const text = msg.type === 'text' ? (msg.body || msg.content || '') : (typeof msg.body === 'string' ? msg.body : '');
+    const text =
+      !msg.type || msg.type === 'text'
+        ? msg.body ?? ''
+        : typeof msg.body === 'string'
+          ? msg.body
+          : '';
     navigator.clipboard.writeText(text || '');
-    // close menu
     msg.menuOpen = false;
-    this.updateMessage(msg);
   }
 
   editMessage(msg: UiChatThread) {
     if (!msg.type || msg.type === 'text') {
       msg.isEditing = true;
-      msg.editBody = msg.body ?? msg.content ?? '';
-      msg.menuOpen = false;
-      this.updateMessage(msg);
+      msg.editBody = msg.body;
     }
+    msg.menuOpen = false;
   }
 
   saveEdit(msg: UiChatThread) {
-    if (typeof msg.editBody !== 'string') return;
-    this.chatService.editMessage(Number(msg.messageId), msg.editBody).subscribe({
-      next: (res: any) => {
-        // prefer server response if provided
-        msg.body = res?.body ?? msg.editBody;
-        msg.content = msg.body;
-        msg.isEditing = false;
-        // update last message item in messages array if present
-        this.updateMessage(msg);
-      },
-      error: (err) => {
-        console.error('Error updating message', err);
-        // fallback to local update
-        msg.body = msg.editBody;
-        msg.isEditing = false;
-        this.updateMessage(msg);
+    if (typeof msg.editBody === 'string') {
+
+      msg.body = msg.editBody;
+
+      if (Array.isArray(msg.messages) && msg.messages.length) {
+        const lastIndex = msg.messages.length - 1;
+        const last = msg.messages[lastIndex];
+        if (last && (!last.type || last.type === 'text')) {
+
+          msg.messages = [
+            ...msg.messages.slice(0, lastIndex),
+            { ...last, body: msg.editBody },
+          ];
+        }
       }
-    });
+
+      msg.isEditing = false;
+      this.chatService.editMessage(Number(msg.messageId), msg.editBody).subscribe({
+        next: (res: any) => {
+          console.log('Message updated on server', res);
+        },
+        error: (err) => {
+          console.error('Error updating message:', err);
+
+        }
+      });
+    }
   }
+
 
   cancelEdit(msg: UiChatThread) {
     msg.isEditing = false;
-    msg.editBody = msg.body ?? msg.content;
-    this.updateMessage(msg);
+    msg.editBody = msg.body;
   }
 
   confirmDelete(msg: UiChatThread, type: 'everyone' | 'me') {
@@ -344,22 +404,20 @@ export class ChatWindowcomponent implements OnInit {
         next: () => {
           msg.deletedForEveryone = true;
           msg.deletedForMe = false;
-          msg.body = '';
           msg.content = '';
-          this.updateMessage(msg);
-        },
-        error: (err) => console.error('Error deleting for everyone', err)
+        }
       });
-    } else {
+    } else if (type === 'me') {
       this.chatService.deleteForMe(msg.messageId).subscribe({
         next: () => {
           msg.deletedForMe = true;
           msg.deletedForEveryone = false;
-          msg.body = '';
-          msg.content = '';
-          this.updateMessage(msg);
+          msg.content = "";
+          const newMessages = this.messagesSubject.value.map(m =>
+            m.messageId === msg.messageId ? msg : m
+          );
+          this.messagesSubject.next(newMessages);
         },
-        error: (err) => console.error('Error deleting for me', err)
       });
     }
     msg.confirmDelete = false;
@@ -367,35 +425,24 @@ export class ChatWindowcomponent implements OnInit {
 
   openReactions(msg: UiChatThread, event: Event) {
     event.stopPropagation();
-    // close menus and open reaction picker for this message
-    const newList = this.messagesSubject.value.map((m) => {
-      if (m.messageId === msg.messageId) {
-        return { ...m, showReactions: !m.showReactions, menuOpen: false };
-      }
-      return { ...m, showReactions: false, menuOpen: false };
-    });
-    this.messagesSubject.next(newList);
+    msg.showReactions = true;
   }
 
   setReaction(msg: UiChatThread, reaction: any) {
     const payload = {
       messageId: Number(msg.messageId ?? 0),
       userId: this.myUserId,
-      reactionId: reaction.id
+      reactionId: reaction.id,
     };
     this.chatService.addMessageReaction(payload).subscribe({
-      next: (res: any) => {
-        // expect server to return updated reactions list or single reaction
-        if (res?.reactions) {
-          msg.reactions = res.reactions;
-        } else {
-          msg.reactions = [...(msg.reactions || []), reaction];
-        }
+      next: () => {
+        msg.reactions ??= [];
+        msg.reactions = [...(msg.reactions || []), reaction];
         msg.showReactions = false;
-        msg.menuOpen = false;
-        this.updateMessage(msg);
+        console.log(msg);
       },
-      error: (err) => console.error('Error adding reaction:', err)
+      error: (err) => console.error('Error adding reaction:', err),
     });
+
   }
 }
