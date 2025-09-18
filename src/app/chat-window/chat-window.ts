@@ -1,11 +1,21 @@
-import { ChatService, ChatThread  } from './../services/chat-service';
-import { Component, ElementRef, inject, OnInit, ViewChild, HostListener, Input, ChangeDetectorRef, Output } from '@angular/core';
+import { ChatService, ChatThread, Reaction } from './../services/chat-service';
+import {
+  Component,
+  ElementRef,
+  inject,
+  OnInit,
+  ViewChild,
+  HostListener,
+  Input,
+  ChangeDetectorRef,
+  EventEmitter,
+  Output,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
-import { BehaviorSubject, map, Observable } from 'rxjs';
+import { map, BehaviorSubject, Observable } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { EventEmitter } from '@angular/core';
 
 type UiChatThread = {
   messageId: string;
@@ -23,15 +33,16 @@ type UiChatThread = {
   type?: string;
   name?: string;
   body?: string;
-  reactions?: any[];
+  reactions?: Reaction[];
   confirmDelete?: boolean;
   deletedForEveryone?: boolean;
   deletedForMe?: boolean;
   userId: string | number;
-  photo: string;
    time?: Date | string;
   attachmentId?: string;
-
+  photo?: string;
+  messageCode?: number;
+  reaction?: string | null;
 };
 
 @Component({
@@ -49,14 +60,16 @@ export class ChatWindowcomponent implements OnInit {
   messagesSubject = new BehaviorSubject<UiChatThread[]>([]);
   messages$: Observable<UiChatThread[]> = this.messagesSubject.asObservable();
   public messages: any[] = [];
+  private ChatService = inject(ChatService);
+  safeMessageInput: SafeHtml = '';
+
   public myUserId = 534;
   public imageUrl: string | null = null;
 
-  constructor(private cdr: ChangeDetectorRef, private sanitizer: DomSanitizer) { }
-
   baseURL = 'https://devbe.ariseorganization.com';
+  constructor(private sanitizer: DomSanitizer) { }
 
-  availableReactions: any[] = [];
+  availableReactions$ = this.ChatService.availableReactions;
   @Input() selectedChatId: string | null = null;
   @Input() isMobile: boolean = false;
   @Output() backToList = new EventEmitter<void>();
@@ -83,57 +96,38 @@ goBackToChatList() {
   }
 
   ngOnInit(): void {
-
-    this.chatService.getAllReactions().subscribe({
-      next: (res: any) => {
-        this.availableReactions = res.data;
-      },
-      error: (err) => console.log('Error fetching reactions', err),
+    this.SelectedUserId.subscribe((userId) => {
+      this.messagesSubject.next([]); // reset messages
+      if (userId) {
+        this.ChatService.getChatByUserId(userId as number)
+          .pipe(
+            map((res: any) =>
+              res.data.map((msg: any) => {
+                return {
+                  messageId: msg.messageId ?? msg.id,
+                  sender:
+                    msg.fromUser.id === this.myUserId
+                      ? 'You'
+                      : msg.fromUser.firstName + ' ' + msg.fromUser.lastName,
+                  messageCode: msg.messageCode,
+                  content: msg.body.includes("https://dwr9zlq9lexeu.cloudfront.net/Development") ? "" : msg.body,
+                  reaction: msg.messageCode ? this.availableReactions$.value.find(r => r.id == msg.messageCode)?.icon : "",
+                  createdOn: new Date(msg.createdOn + 'Z'),
+                  avatar: msg.fromUser.photo,
+                  type: msg.body.includes("data:image/") || msg.messageCode ? 'image' : 'text',
+                }
+              })
+            )
+          )
+          .subscribe({
+            next: (msgs: any[]) => {
+              const current = this.messagesSubject.value;
+              this.messagesSubject.next([...msgs, ...current]);
+            },
+            error: (err) => console.error('Error loading conversations:', err),
+          });
+      }
     });
-
-
-
-
-    console.log('SelectedUserId', this.SelectedUserId)
-
-    this.SelectedUserId
-      .subscribe((userId) => {
-        console.log('userid', userId)
-        this.messages = [];
-        if (userId) {
-          this.chatService.getChatByUserId(userId as number)
-            .pipe(
-              map((res: any) => {
-                console.log('res', res)
-                return res.data.map((msg: any) => {
-                  console.log('msg', msg)
-                  return {
-                    messageId: msg.messageId ?? msg.id,
-                    sender: msg.fromUser.id === this.myUserId ? 'You' : msg.fromUser.firstName + ' ' + msg.fromUser.lastName,
-                    content: msg.body,
-                    time: msg.createdOn,
-                    avatar: msg.fromUser.photo,
-                    type: "text",
-                  };
-
-                })
-              }
-
-              )
-            ).subscribe({
-              next: (msgs: any[]) => {
-                this.messages = [...msgs, ...this.messages];
-                console.log('this.messages', this.messages)
-                this.cdr.detectChanges();
-              },
-              error: (err) => {
-                console.error('Error loading conversations:', err);
-              }
-
-            })
-        }
-      })
-
   }
 
   messageInput: string = '';
@@ -151,11 +145,16 @@ goBackToChatList() {
   addEmoji(reaction: any) {
     this.showEmojiPicker = false;
     this.emojiInput = reaction.id;
+    const imgTag = `<img src="${reaction.icon}" alt="${reaction.name}" width="20" height="20" style="vertical-align: middle;" />`;
+    // this.messageInput += imgTag;
+
+    // sanitize for Angular binding
+    this.safeMessageInput = this.sanitizer.bypassSecurityTrustHtml(imgTag);
   }
 
   // ✅ Send Message
   sendMessage() {
-    if (this.messageInput.trim() || this.imageUrl) {
+    if ((this.messageInput.trim() || this.emojiInput) && this.SelectedUserId.value) {
       const payload = {
         userId: this.SelectedUserId.value ?? 694,
         body: this.messageInput,
@@ -173,29 +172,25 @@ goBackToChatList() {
             userId: payload.userId,
             sender: 'You',
             name: 'You',
-            photo: 'assets/imges/Ellipse 514.svg',
-            content: this.imageUrl ? this.imageUrl : this.messageInput,
-            type: this.imageUrl ? 'image' : 'text',
-            time: Date.now().toString() + '_' + Math.random().toString(36).slice(2),
-            message: "",
+            content: this.messageInput,
+            reaction: this.emojiInput ? this.availableReactions$.value.find(r => r.id === +this.emojiInput)!.icon : null,
+            messageCode: +this.emojiInput,
             messages: [
               {
                 userId: payload.userId,
                 body: this.messageInput,
-                type: 'text',
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                photo: 'assets/imges/Ellipse 514.svg',
+                reaction: this.emojiInput ? this.availableReactions$.value.find(r => r.id === +this.emojiInput)!.icon : "",
+                type: this.emojiInput ? 'image' : 'text',
+                createdOn: new Date().toISOString(),
               },
             ],
-            lastMessageTime: new Date(),
-            unreadCount: 0,
-            totalCount: 1,
-            msgId: Date.now().toString() + '_' + Math.random().toString(36).slice(2),
+            type: this.emojiInput ? 'image' : 'text',
+            createdOn: new Date().toISOString()
           };
 
           this.messages = [newMsg, ...this.messages];
           this.messageInput = '';
-          console.log('window' + this.messages);
+          this.emojiInput = ''
         },
         error: (err) => {
           console.error('Error sending message:', err);
@@ -450,7 +445,7 @@ goBackToChatList() {
 
   openReactions(msg: UiChatThread, event: Event) {
     event.stopPropagation();
-    this.closeAllMenus();
+    // this.closeAllMenus();
     msg.showReactions = true;
   }
 
@@ -460,13 +455,15 @@ goBackToChatList() {
       userId: this.myUserId,
       reactionId: reaction.id,
     };
-
-    this.chatService.addMessageReaction(payload).subscribe({
+    this.ChatService.addMessageReaction(payload).subscribe({
       next: () => {
-        msg.reactions = [reaction];
+        msg.reactions ??= [];
+        msg.reactions = [...(msg.reactions || []), reaction];
         msg.showReactions = false;
+        console.log(msg);
       },
       error: (err) => console.error('Error adding reaction:', err),
     });
+
   }
 }

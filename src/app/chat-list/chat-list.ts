@@ -46,6 +46,12 @@ export class ChatListComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadConversations();
+    this.chatService.getAllReactions().subscribe({
+      next: (res: any) => {
+        this.chatService.availableReactions.next(res.data);
+      },
+      error: (err) => console.log('Error fetching reactions', err),
+    });
   }
 
   loadConversations(loadMore: boolean = false): void {

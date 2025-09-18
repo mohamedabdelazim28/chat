@@ -15,6 +15,13 @@ export interface ChatThread {
   isReaded: boolean;
 }
 
+export interface Reaction{
+  id:number;
+  name:string;
+  icon:string;
+  iconUrl:string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -24,10 +31,11 @@ export class ChatService {
   }
   private allMessages: ChatThread[] = [];
   public SelectedUserId = new BehaviorSubject<number | null>(null);
+    public availableReactions = new BehaviorSubject<Reaction[]>([]);
 
   private http = inject(HttpClient);
   private baseURL = 'https://devbe.ariseorganization.com';
-  private jwtToken = "Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoic2FtaXJhIGhhc3NhbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiNTM0IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic2FtaXJhaGFzc2FubjQ0QGdtYWlsLmNvbSIsInVpZCI6IjUzNCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkZhbWlseSBNZW1iZXIiLCJleHAiOjE3NTgxMDc5OTUsImlzcyI6IklkZW50aXR5IiwiYXVkIjoiSWRlbnRpdHlVc2VyIn0.Ndq7pFlIdSuJlL2EVRuULk3Oj1jEmFONIlor6dB4Gi4";
+  private jwtToken = "Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoic2FtaXJhIGhhc3NhbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiNTM0IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic2FtaXJhaGFzc2FubjQ0QGdtYWlsLmNvbSIsInVpZCI6IjUzNCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkZhbWlseSBNZW1iZXIiLCJleHAiOjE3NTgxNTMzMzAsImlzcyI6IklkZW50aXR5IiwiYXVkIjoiSWRlbnRpdHlVc2VyIn0.GWw0QXNk8vkjaUttLT__N8ydYTUkqBtl5S1l3Ap2FZE"
   conversations: any[] = [];
 
   sendNewMessage(payload: {
