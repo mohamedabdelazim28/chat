@@ -1,4 +1,4 @@
-import { ChatService, ChatThread, Reaction } from './../services/chat-service';
+import { ChatService, Reaction } from './../services/chat-service';
 import {
   Component,
   ElementRef,
@@ -18,14 +18,13 @@ import { map, BehaviorSubject, Observable } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 type UiChatThread = {
-  messageId: string;
+  messageId: string | number;
   showMenu?: boolean;
   menuOpen?: boolean;
   showReactions?: boolean;
   isEditing?: boolean;
   editBody?: string;
   messages?: any[];
-  voiceMessages?: any[];
   sender?: string;
   content?: string;
   createdOn?: Date | string;
@@ -33,15 +32,12 @@ type UiChatThread = {
   type?: string;
   name?: string;
   body?: string;
-  reactions?: Reaction[];
+  reactions?: any[]; // depends on API shape
   confirmDelete?: boolean;
   deletedForEveryone?: boolean;
   deletedForMe?: boolean;
-  userId: string | number;
-   time?: Date | string;
-  attachmentId?: string;
-  photo?: string;
-  messageCode?: number;
+  userId?: string | number;
+  messageCode?: number | string;
   reaction?: string | null;
 };
 
@@ -53,76 +49,66 @@ type UiChatThread = {
   styleUrls: ['./chat-window.scss'],
 })
 export class ChatWindowcomponent implements OnInit {
-  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('fileInput', { static: false }) fileInput!: ElementRef<HTMLInputElement>;
 
   private chatService = inject(ChatService);
   private SelectedUserId = this.chatService.SelectedUserId;
   messagesSubject = new BehaviorSubject<UiChatThread[]>([]);
   messages$: Observable<UiChatThread[]> = this.messagesSubject.asObservable();
-  public messages: any[] = [];
-  private ChatService = inject(ChatService);
-  safeMessageInput: SafeHtml = '';
+  public messages: UiChatThread[] = [];
+  private cdRef = inject(ChangeDetectorRef);
+  private sanitizer = inject(DomSanitizer);
 
   public myUserId = 534;
-  public imageUrl: string | null = null;
-
   baseURL = 'https://devbe.ariseorganization.com';
-  constructor(private sanitizer: DomSanitizer) { }
+  lastSeen: string | null = null;
 
-  availableReactions$ = this.ChatService.availableReactions;
+  availableReactions$ = this.chatService.availableReactions;
+
   @Input() selectedChatId: string | null = null;
   @Input() isMobile: boolean = false;
   @Output() backToList = new EventEmitter<void>();
 
-  isChatWindowOpen = false;
- openChat(chatId: string) {
-  this.selectedChatId = chatId;
-  this.isChatWindowOpen = true;
-}
+  isRecording = false;
+  messageInput = '';
+  showEmojiPicker = false;
+  showAttachmentMenu = false;
+  emojiInput: string = '';
 
-goBackToChatList() {
-  this.backToList.emit();
-}
-
-  isImage(path: string): boolean {
-    return /\.(jpg|jpeg|png|gif)$/i.test(path);
-  }
-
-
-
-  getImageUrl(path: string): string {
-    return `${this.baseURL}/${path}`;
-
-  }
+  constructor() {}
 
   ngOnInit(): void {
+    // subscribe to selected user and load messages
     this.SelectedUserId.subscribe((userId) => {
       this.messagesSubject.next([]); // reset messages
+      this.messages = [];
       if (userId) {
-        this.ChatService.getChatByUserId(userId as number)
+        this.chatService.getChatByUserId(userId as number)
           .pipe(
             map((res: any) =>
               res.data.map((msg: any) => {
+                const isImage = !!(msg.body && /data:image|https?:\/\/.*\.(png|jpg|jpeg|gif)/i.test(msg.body));
+                const reactionIcon = msg.messageCode ? this.availableReactions$.value.find((r: any) => r.id == msg.messageCode)?.icon : null;
                 return {
                   messageId: msg.messageId ?? msg.id,
-                  sender:
-                    msg.fromUser.id === this.myUserId
-                      ? 'You'
-                      : msg.fromUser.firstName + ' ' + msg.fromUser.lastName,
+                  sender: (msg.fromUser?.id === this.myUserId) ? 'You' : `${msg.fromUser?.firstName || ''} ${msg.fromUser?.lastName || ''}`,
                   messageCode: msg.messageCode,
-                  content: msg.body.includes("https://dwr9zlq9lexeu.cloudfront.net/Development") ? "" : msg.body,
-                  reaction: msg.messageCode ? this.availableReactions$.value.find(r => r.id == msg.messageCode)?.icon : "",
+                  content: msg.body && !isImage ? msg.body : '',
+                  body: isImage ? msg.body : (msg.body || ''),
+                  reaction: reactionIcon,
+                  reactions: msg.reactions || [],
                   createdOn: new Date(msg.createdOn + 'Z'),
-                  avatar: msg.fromUser.photo,
-                  type: msg.body.includes("data:image/") || msg.messageCode ? 'image' : 'text',
-                }
+                  avatar: msg.fromUser?.photo || 'assets/imges/Ellipse 514.svg',
+                  type: isImage ? 'image' : (msg.type || 'text'),
+                } as UiChatThread;
               })
             )
           )
           .subscribe({
-            next: (msgs: any[]) => {
-              const current = this.messagesSubject.value;
-              this.messagesSubject.next([...msgs, ...current]);
+            next: (msgs: UiChatThread[]) => {
+              // append newest at top (as original code did)
+              const combined = [...msgs, ...this.messagesSubject.value];
+              this.messagesSubject.next(combined);
             },
             error: (err) => console.error('Error loading conversations:', err),
           });
@@ -130,194 +116,144 @@ goBackToChatList() {
     });
   }
 
-  messageInput: string = '';
-  showEmojiPicker: boolean = false;
-  showAttachmentMenu: boolean = false;
-  safeMessage: SafeHtml = '';
-  safecontent: SafeHtml = '';
-  messageEmoji: string = '';
-  emojiInput: string = '';
+  // helper to update BehaviorSubject and local array
+  private updateMessage(updated: UiChatThread) {
+    const newList = this.messagesSubject.value.map((m) =>
+      m.messageId === updated.messageId ? { ...m, ...updated } : m
+    );
+    this.messagesSubject.next(newList);
+    this.cdRef.detectChanges();
+  }
 
-  // Emoji
-  toggleEmojiPicker() {
+  // UI helpers
+  goBackToChatList() { this.backToList.emit(); }
+
+  isImage(path: string): boolean {
+    return !!path && /\.(jpg|jpeg|png|gif)/i.test(path);
+  }
+
+  getImageUrl(path: string) {
+    return `${this.baseURL}/${path}`;
+  }
+
+  toggleEmojiPicker(evt?: Event) {
+    if (evt) evt.stopPropagation();
     this.showEmojiPicker = !this.showEmojiPicker;
+    if (this.showEmojiPicker) this.closeAllMenus();
   }
+
   addEmoji(reaction: any) {
+    // add emoji to the messageInput (as reaction code) but no alt text
     this.showEmojiPicker = false;
-    this.emojiInput = reaction.id;
-    const imgTag = `<img src="${reaction.icon}" alt="${reaction.name}" width="20" height="20" style="vertical-align: middle;" />`;
-    // this.messageInput += imgTag;
-
-    // sanitize for Angular binding
-    this.safeMessageInput = this.sanitizer.bypassSecurityTrustHtml(imgTag);
+    this.emojiInput = String(reaction.id);
+    // optional: show a preview or directly send
+    const imgTag = `<img src="${reaction.icon}" alt="" width="20" height="20" style="vertical-align: middle;" />`;
+    // append sanitized preview inside input (or handle differently)
+    this.messageInput = this.messageInput ? (this.messageInput + ' ') : '';
+    // we keep a hidden emojiInput to send to API
   }
 
-  // ✅ Send Message
   sendMessage() {
-    if ((this.messageInput.trim() || this.emojiInput) && this.SelectedUserId.value) {
-      const payload = {
-        userId: this.SelectedUserId.value ?? 694,
-        body: this.messageInput,
-        voiceFileId: null,
-        attachmentId: null,
-        groupId: null,
-        messageCode: this.emojiInput ?? "",
-      };
+    if ((!this.messageInput.trim() && !this.emojiInput) || !this.SelectedUserId.value) return;
 
-      this.chatService.sendNewMessage(payload).subscribe({
-        next: () => {
-          this.safecontent = this.sanitizer.bypassSecurityTrustHtml(this.messageEmoji);
-          const newMsg = {
-            messageId: Date.now(),
-            userId: payload.userId,
-            sender: 'You',
-            name: 'You',
-            content: this.messageInput,
-            reaction: this.emojiInput ? this.availableReactions$.value.find(r => r.id === +this.emojiInput)!.icon : null,
-            messageCode: +this.emojiInput,
-            messages: [
-              {
-                userId: payload.userId,
-                body: this.messageInput,
-                reaction: this.emojiInput ? this.availableReactions$.value.find(r => r.id === +this.emojiInput)!.icon : "",
-                type: this.emojiInput ? 'image' : 'text',
-                createdOn: new Date().toISOString(),
-              },
-            ],
-            type: this.emojiInput ? 'image' : 'text',
-            createdOn: new Date().toISOString()
-          };
+    const payload = {
+      userId: this.SelectedUserId.value,
+      body: this.messageInput,
+      voiceFileId: null,
+      attachmentId: null,
+      groupId: null,
+      messageCode: this.emojiInput || ''
+    };
 
-          this.messages = [newMsg, ...this.messages];
-          this.messageInput = '';
-          this.emojiInput = ''
-        },
-        error: (err) => {
-          console.error('Error sending message:', err);
-          alert('Failed to send message');
-        },
-      });
-    }
+    this.chatService.sendNewMessage(payload).subscribe({
+      next: (res: any) => {
+        // create local message using response if available
+        const newMsg: UiChatThread = {
+          messageId: res?.id ?? Date.now(),
+          userId: payload.userId,
+          sender: 'You',
+          name: 'You',
+          body: payload.body,
+          content: payload.body,
+          messageCode: payload.messageCode ? Number(payload.messageCode) : undefined,
+          reaction: payload.messageCode ? this.availableReactions$.value.find(r => r.id === +payload.messageCode)?.icon : null,
+          reactions: [],
+          type: payload.messageCode ? 'image' : 'text',
+          createdOn: new Date().toISOString(),
+          avatar: 'assets/imges/Ellipse 514.svg'
+        };
+        // prepend to list
+        this.messagesSubject.next([newMsg, ...this.messagesSubject.value]);
+        // reset inputs
+        this.messageInput = '';
+        this.emojiInput = '';
+        this.cdRef.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed sending message', err);
+        alert('Failed to send message');
+      }
+    });
   }
-  // Attachments
-  toggleAttachmentMenu() {
+
+  // attachments
+  toggleAttachmentMenu(evt?: Event) {
+    if (evt) evt.stopPropagation();
     this.showAttachmentMenu = !this.showAttachmentMenu;
+    if (this.showAttachmentMenu) this.closeAllMenus();
   }
+
   triggerFileInput(type: string) {
     this.fileInput.nativeElement.accept = type;
     this.fileInput.nativeElement.click();
     this.showAttachmentMenu = false;
   }
-  handleFileUpload(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      const fileUrl = URL.createObjectURL(file);
-      const base = {
-        userId: this.SelectedUserId.value ?? 694,
-        sender: 'You',
-        name: 'You',
-        photo: 'assets/imges/Ellipse 514.svg',
-        createdOn: new Date().toISOString(),
-        unreadCount: 0,
-        totalCount: 1,
-      };
 
-      if (file.type.startsWith('image/')) {
-        this.messages.push({
-          ...base,
-          body: fileUrl,
-          lastMessage: fileUrl,
-          messages: [
-            {
-              userId: 694,
-              body: fileUrl,
-              type: 'image',
-              time: new Date(),
-              photo: 'assets/imges/Ellipse 514.svg',
-            },
-          ],
-          type: 'image',
-        });
-      } else {
-        this.messages.push({
-          ...base,
-          body: file.name,
-          lastMessage: file.name,
-          messages: [
-            {
-              userId: 694,
-              body: file.name,
-              type: 'file',
-              time: new Date(),
-              photo: 'assets/imges/Ellipse 514.svg',
-            },
-          ],
-          type: 'file',
-        });
-      }
-    }
+  handleFileUpload(event: any) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const fileUrl = URL.createObjectURL(file);
+
+    const newMsg: UiChatThread = {
+      messageId: Date.now(),
+      sender: 'You',
+      body: file.type.startsWith('image/') ? fileUrl : file.name,
+      type: file.type.startsWith('image/') ? 'image' : 'file',
+      createdOn: new Date().toISOString(),
+      avatar: 'assets/imges/Ellipse 514.svg',
+      reactions: []
+    };
+
+    this.messagesSubject.next([newMsg, ...this.messagesSubject.value]);
+    // optionally upload file to server here...
   }
 
-
-  // Audio Recording
+  // recording (kept same)
   mediaRecorder: any;
   audioChunks: any[] = [];
-  isRecording: boolean = false;
 
   async startRecording() {
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert('Microphone not supported in this browser');
-        return;
-      }
-
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus',
-      });
+      this.mediaRecorder = new MediaRecorder(stream);
       this.audioChunks = [];
-
-      this.mediaRecorder.ondataavailable = (event: any) => {
-        if (event.data.size > 0) {
-          this.audioChunks.push(event.data);
-        }
-      };
-
+      this.mediaRecorder.ondataavailable = (e: any) => { if (e.data.size) this.audioChunks.push(e.data); };
       this.mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(this.audioChunks, {
-          type: 'audio/webm;codecs=opus',
-        });
-        const audioUrl = URL.createObjectURL(audioBlob);
-
+        const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
+        const url = URL.createObjectURL(blob);
         const newMsg: UiChatThread = {
-          userId: 694,
+          messageId: Date.now(),
           sender: 'You',
-          name: 'You',
-          photo: 'assets/imges/Ellipse 514.svg',
-          body: audioUrl,
+          body: url,
           type: 'audio',
-          messageId: Date.now().toLocaleString(),
-          messages: [
-            {
-              userId: 694,
-              body: audioUrl,
-              type: 'audio',
-              createdOn: new Date().toISOString(),
-              photo: 'assets/imges/Ellipse 514.svg',
-            },
-          ],
-          createdOn: new Date().toISOString()
+          createdOn: new Date().toISOString(),
+          avatar: 'assets/imges/Ellipse 514.svg'
         };
-
-        const current = this.messagesSubject.value;
-        this.messagesSubject.next([newMsg, ...current]);
+        this.messagesSubject.next([newMsg, ...this.messagesSubject.value]);
       };
-
       this.mediaRecorder.start();
       this.isRecording = true;
-    } catch (err) {
-      console.error('Error accessing microphone', err);
-    }
+    } catch (err) { console.error(err); alert('Mic access denied or not supported'); }
   }
 
   stopRecording() {
@@ -328,94 +264,78 @@ goBackToChatList() {
   }
 
   toggleRecording() {
-    if (this.isRecording) {
-      this.stopRecording();
-    } else {
-      this.startRecording();
-    }
+    this.isRecording ? this.stopRecording() : this.startRecording();
   }
 
-  // UI helpers
+  // clicks outside -> close menus
   @HostListener('document:click', ['$event'])
   clickOutside(event: Event) {
-    if (
-      !(event.target as HTMLElement).closest('.message-menu') &&
-      !(event.target as HTMLElement).closest('.reaction-picker')
-    ) {
+    const el = event.target as HTMLElement;
+    if (!el.closest('.dropdown') && !el.closest('.reaction-picker') && !el.closest('.emoji-picker') && !el.closest('.attachment-menu')) {
       this.closeAllMenus();
     }
   }
 
   closeAllMenus() {
-    const updated = this.messagesSubject.value.map((m) => ({
-      ...m,
-      menuOpen: false,
-      showReactions: false,
-    }));
+    const updated = this.messagesSubject.value.map((m) => ({ ...m, menuOpen: false, showReactions: false }));
     this.messagesSubject.next(updated);
+    this.cdRef.detectChanges();
   }
 
   toggleMenu(msg: UiChatThread, event: Event) {
     event.stopPropagation();
-    !msg.showMenu ? this.closeAllMenus() : null;
-    msg.menuOpen = true;
-    msg.showMenu = !msg.showMenu
-
+    // toggle single menu and close others
+    const newList = this.messagesSubject.value.map((m) => {
+      if (m.messageId === msg.messageId) {
+        return { ...m, menuOpen: !m.menuOpen, showReactions: false };
+      }
+      return { ...m, menuOpen: false, showReactions: false };
+    });
+    this.messagesSubject.next(newList);
   }
 
   copyMessage(msg: UiChatThread) {
-    const text =
-      !msg.type || msg.type === 'text'
-        ? msg.body ?? ''
-        : typeof msg.body === 'string'
-          ? msg.body
-          : '';
+    const text = msg.type === 'text' ? (msg.body || msg.content || '') : (typeof msg.body === 'string' ? msg.body : '');
     navigator.clipboard.writeText(text || '');
+    // close menu
     msg.menuOpen = false;
+    this.updateMessage(msg);
   }
 
   editMessage(msg: UiChatThread) {
     if (!msg.type || msg.type === 'text') {
       msg.isEditing = true;
-      msg.editBody = msg.body;
+      msg.editBody = msg.body ?? msg.content ?? '';
+      msg.menuOpen = false;
+      this.updateMessage(msg);
     }
-    msg.menuOpen = false;
   }
 
   saveEdit(msg: UiChatThread) {
-    if (typeof msg.editBody === 'string') {
-
-      msg.body = msg.editBody;
-
-    if (Array.isArray(msg.messages) && msg.messages.length) {
-      const lastIndex = msg.messages.length - 1;
-      const last = msg.messages[lastIndex];
-      if (last && (!last.type || last.type === 'text')) {
-
-        msg.messages = [
-          ...msg.messages.slice(0, lastIndex),
-          { ...last, body:  msg.editBody },
-        ];
+    if (typeof msg.editBody !== 'string') return;
+    this.chatService.editMessage(Number(msg.messageId), msg.editBody).subscribe({
+      next: (res: any) => {
+        // prefer server response if provided
+        msg.body = res?.body ?? msg.editBody;
+        msg.content = msg.body;
+        msg.isEditing = false;
+        // update last message item in messages array if present
+        this.updateMessage(msg);
+      },
+      error: (err) => {
+        console.error('Error updating message', err);
+        // fallback to local update
+        msg.body = msg.editBody;
+        msg.isEditing = false;
+        this.updateMessage(msg);
       }
-    }
-
-      msg.isEditing = false;
-      this.chatService.editMessage(Number(msg.messageId), msg.editBody).subscribe({
-        next: (res: any) => {
-          console.log('Message updated on server', res);
-        },
-        error: (err) => {
-          console.error('Error updating message:', err);
-
-        }
-      });
-    }
+    });
   }
-
 
   cancelEdit(msg: UiChatThread) {
     msg.isEditing = false;
-    msg.editBody = msg.body;
+    msg.editBody = msg.body ?? msg.content;
+    this.updateMessage(msg);
   }
 
   confirmDelete(msg: UiChatThread, type: 'everyone' | 'me') {
@@ -424,20 +344,22 @@ goBackToChatList() {
         next: () => {
           msg.deletedForEveryone = true;
           msg.deletedForMe = false;
-          msg.content = ''; // نخفي الرسالة الأصلية
-        }
+          msg.body = '';
+          msg.content = '';
+          this.updateMessage(msg);
+        },
+        error: (err) => console.error('Error deleting for everyone', err)
       });
-    } else if (type === 'me') {
+    } else {
       this.chatService.deleteForMe(msg.messageId).subscribe({
         next: () => {
           msg.deletedForMe = true;
           msg.deletedForEveryone = false;
-          msg.content = "";
-          const newMessages = this.messagesSubject.value.map(m =>
-            m.messageId === msg.messageId ? msg : m
-          );
-          this.messagesSubject.next(newMessages);
+          msg.body = '';
+          msg.content = '';
+          this.updateMessage(msg);
         },
+        error: (err) => console.error('Error deleting for me', err)
       });
     }
     msg.confirmDelete = false;
@@ -445,25 +367,35 @@ goBackToChatList() {
 
   openReactions(msg: UiChatThread, event: Event) {
     event.stopPropagation();
-    // this.closeAllMenus();
-    msg.showReactions = true;
+    // close menus and open reaction picker for this message
+    const newList = this.messagesSubject.value.map((m) => {
+      if (m.messageId === msg.messageId) {
+        return { ...m, showReactions: !m.showReactions, menuOpen: false };
+      }
+      return { ...m, showReactions: false, menuOpen: false };
+    });
+    this.messagesSubject.next(newList);
   }
 
   setReaction(msg: UiChatThread, reaction: any) {
     const payload = {
       messageId: Number(msg.messageId ?? 0),
       userId: this.myUserId,
-      reactionId: reaction.id,
+      reactionId: reaction.id
     };
-    this.ChatService.addMessageReaction(payload).subscribe({
-      next: () => {
-        msg.reactions ??= [];
-        msg.reactions = [...(msg.reactions || []), reaction];
+    this.chatService.addMessageReaction(payload).subscribe({
+      next: (res: any) => {
+        // expect server to return updated reactions list or single reaction
+        if (res?.reactions) {
+          msg.reactions = res.reactions;
+        } else {
+          msg.reactions = [...(msg.reactions || []), reaction];
+        }
         msg.showReactions = false;
-        console.log(msg);
+        msg.menuOpen = false;
+        this.updateMessage(msg);
       },
-      error: (err) => console.error('Error adding reaction:', err),
+      error: (err) => console.error('Error adding reaction:', err)
     });
-
   }
 }

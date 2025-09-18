@@ -135,7 +135,7 @@
 @media screen and (max-width: 767px) {
   .app-container {
     grid-template-areas:
-      "chat-list";
+      "chat-list""chat-window";
     grid-template-columns: 1fr;
     grid-template-rows: 60px 1fr;
     gap: 0;

@@ -9,11 +9,9 @@
   flex-direction: column;
   background-color: #ffffff;
   height: calc(100% - 30px);
-  width: 90%;
+  width: 100%;
   border-radius: 16px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-top: -25px;
-  margin-left: 55px;
 
 
   .chat-window-header {
@@ -26,15 +24,13 @@
     background-color: #ffffff;
     border-radius: 16px 16px 0 0;
 
-
-    .back-button{
+    .back-button {
       border: none;
       background: none;
       cursor: pointer;
       font-size: 16px;
       color: #3b82f6;
     }
-
 
     .contact-info {
       display: flex;
@@ -54,8 +50,6 @@
           object-fit: cover;
         }
       }
-
-
 
       .contact-details {
         .contact-name {
@@ -102,7 +96,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    background-color: #F2F3F480;
+    background-color: rgba(242,243,244,0.5);
     padding: 16px 24px;
     overflow-y: auto;
     overflow-x: hidden;
@@ -128,24 +122,21 @@
             height: 100%;
             object-fit: cover;
           }
-
         }
 
-        .empty-chat-content h3 {
+        h3 {
           color: #333;
           font-size: 1rem;
           font-weight: 400;
           margin-bottom: 0.5rem;
         }
 
-        .empty-chat-content p {
+        p {
           color: #666;
           font-size: 0.9rem;
-          line-height: 1.4;
         }
       }
     }
-
 
     .message {
       display: flex;
@@ -153,7 +144,6 @@
       margin-bottom: 12px;
       max-width: 70%;
       position: relative;
-
 
       .avatar {
         width: 35px;
@@ -175,178 +165,164 @@
         position: relative;
         font-size: 14px;
         word-wrap: break-word;
-        position: relative;
-
+        background-color: #ffffff;
+        color: #1e293b;
 
         .deleted-text {
           font-style: italic;
           font-size: 13px;
           color: #000000;
-          background: #f1f5f960;
+          background: rgba(241,245,249,0.6);
           padding: 6px 12px;
           border-radius: 12px;
           display: inline-block;
         }
 
         .text {
-          background-color: #ffffff;
-          color: #1e293b;
-          border-radius: 12px;
-          padding: 8px 12px;
-          position: relative;
-
+          padding: 0;
+          background: none;
 
           .edit-input {
-            border: 25px;
-            background-color: #ffffff;
-            color: #1e293b;
-            border-radius: 12px;
-            padding: 4px 12px;
-            position: relative;
-            margin-bottom: 5px;
+            width: 100%;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #cfd2d5;
+            margin-bottom: 8px;
           }
 
           .edit-actions {
             display: flex;
-            justify-content: center;
             gap: 8px;
+            justify-content: flex-end;
 
             .save-btn {
-              background-color: #ffffff;
-              color: black;
+              background-color: #0ea5e9;
+              color: #fff;
               border: none;
               border-radius: 4px;
-              padding: 4px 8px;
+              padding: 6px 10px;
               cursor: pointer;
-              transition: .5s ease;
-
-              &:hover {
-                background-color: #ffffff68;
-                color: #000000;
-              }
             }
 
             .cancel-btn {
-              background-color: #2f3946;
-              color: #ffffff;
+              background-color: #a3a3a3;
+              color: #fff;
               border: none;
               border-radius: 4px;
-              padding: 4px 8px;
+              padding: 6px 10px;
               cursor: pointer;
-              transition: .5s ease;
-
-              &:hover {
-                background-color: #2f39468a;
-                color: #ffffff;
-              }
             }
           }
-
-
         }
 
-        .delete-popup {
-          position: fixed;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 100%;
-          max-width: 500px;
-          max-height: 300px ;
-          background-color: #fff;
-          display: flex;
-          flex-direction: column;
+        .menu-btn {
+          position: absolute;
+          top: 8px;
+          right: -28px;
+          width: 28px;
+          height: 28px;
+          border: none;
+          border-radius: 50%;
+          background: transparent;
+          font-size: 18px;
+          color: #64748b;
+          cursor: pointer;
+          display: none;
           align-items: center;
-          z-index: 1000;
-          border-radius: 16px;
-          padding: 20px;
-          box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+          justify-content: center;
+        }
 
-          p {
-            color: #2f3946;
-            font-size: 16px;
-            margin-bottom: 16px;
-            font-weight: 600;
-            text-align: center;
-          }
+        &:hover .menu-btn {
+          display: flex;
+        }
 
-          .delete-btn {
+        .dropdown {
+          position: absolute;
+          top: 36px;
+          right: -10px;
+          background: #fff;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+          display: flex;
+          flex-direction: row;
+          width: auto;
+          z-index: 50;
+          padding: 4px;
+
+          button {
+            padding: 8px;
+            background: none;
+            border: none;
+            font-size: 12px;
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 12px;
+            align-items: center;
+            cursor: pointer;
+            color: #1e293b;
+          }
+        }
+
+        .reaction-picker {
+          position: absolute;
+          bottom: -45px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          gap: 8px;
+          background: #fff;
+          padding: 6px 10px;
+          border-radius: 20px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+          z-index: 60;
+
+          .reaction img {
+            width: 20px;
+            height: 20px;
+            object-fit: cover;
+            cursor: pointer;
+          }
+        }
+
+        .reactions-container {
+          position: absolute;
+          bottom: -18px;
+          left: 10%;
+          transform: translateX(-50%);
+          display: flex;
+          gap: 6px;
+          background: #fff;
+          padding: 4px;
+          border-radius: 14px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+          z-index: 40;
+        }
+
+        .image-message {
+          max-width: 200px;
+          max-height: 200px;
+          border-radius: 8px;
+          margin-top: 4px;
+          overflow: hidden;
+
+          img {
             width: 100%;
-
-            button {
-              min-width: 90px;
-              padding: 10px 16px;
-              border: none;
-              border-radius: 8px;
-              font-size: 14px;
-              font-weight: 500;
-              cursor: pointer;
-              transition: background-color 0.3s ease;
-              white-space: nowrap;
-              text-align: center;
-            }
-
-            .for-everyone{
-              background-color: #1b7f9d;
-              color: #fff;
-              transition: .5 ease;
-
-              &:hover {
-                background-color: #0ea5e9;
-                transition: .5 ease;
-              }
-            }
-
-
-            .for-me {
-              background-color: #1b7f9d;
-              color: #fff;
-              transition: .5s ease;
-
-              &:hover {
-                background-color: #0ea5e9;
-                transition: .5s ease;
-              }
-            }
-
-            .cancel {
-              background-color: #a3a2a2;
-              color: #000000;
-              transition: .5s ease;
-
-              &:hover {
-                background-color: #dbd7d7;
-                transition: .5s ease;
-              }
-            }
+            border-radius: 8px;
+            display: block;
+            object-fit: cover;
+            max-width: 220px;
+            max-height: 120px;
           }
         }
 
-        /* موبايل */
-        @media (max-width: 480px) {
-          .delete-popup {
-            padding: 16px;
-
-            p {
-              font-size: 14px;
-            }
-
-            .delete-btn {
-              flex-direction: column;
-              gap: 8px;
-
-              button {
-                width: 100%;
-              }
-            }
-          }
+        .file-message {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: #f1f5f9;
+          padding: 8px 12px;
+          border-radius: 8px;
+          font-size: 14px;
+          color: #1e293b;
         }
-
-
 
         .audio-message {
           padding: 10px;
@@ -361,183 +337,11 @@
           }
         }
 
-        .menu-btn {
-          position: absolute;
-          top: 28px;
-          right: -28px;
-          width: 28px;
-          height: 28px;
-          border: none;
-          border-radius: 50%;
-          background: transparent;
-          font-size: 18px;
-          color: #64748b;
-          cursor: pointer;
-          display: none;
-          align-items: center;
-          justify-content: center;
-          transition: background 0.2s ease;
-
-          &:hover {
-            background: #f1f5f9;
-            color: #334155;
-            transition: background .5s ease;
-          }
-        }
-
-        &:hover .menu-btn {
-          display: flex;
-        }
-
-        .dropdown {
-          position: absolute;
-          top: 85px;
-          left: 100px;
-          background: #fff;
-          border-radius: 8px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-          display: flex;
-          flex-direction: row;
-          width: 160px;
-          z-index: 10;
-
-
-          button {
-            padding: 8px 8px;
-            background: none;
-            border: none;
-            font-size: 12px;
-            display: flex;
-            text-align: center;
-            align-items: center;
-            cursor: pointer;
-            color: #1e293b;
-
-
-            &:hover {
-              background: #f9fafb;
-            }
-
-            mat-icon {
-              font-size: 18px;
-            }
-          }
-        }
-
-        .reaction-picker {
-          position: absolute;
-          bottom: -60%;
-          left: 50%;
-          transform: translateX(-50%);
-          display: flex;
-          gap: 8px;
-          background: #fff;
-          padding: 6px 10px;
-          border-radius: 20px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-          margin-bottom: 6px;
-          z-index: 10;
-
-          :hover {
-            box-shadow: 0 2px 8px #e0ebff;
-            border-radius: 50%;
-            width: 25px;
-            height: 25px;
-          }
-
-          .reaction {
-            align-items: center;
-            display: flex;
-            gap: 4px;
-
-
-            img {
-              width: 20px;
-              height: 20px;
-              object-fit: cover;
-
-              :hover {
-                background-color: #93a6b8;
-              }
-            }
-          }
-
-
-          span {
-            font-size: 18px;
-            cursor: pointer;
-            transition: transform 0.15s ease;
-
-            &:hover {
-              transform: scale(1.2);
-            }
-          }
-        }
-
-        .reactions-container {
-          position: absolute;
-          bottom: -15px;
-          left: 10%;
-          transform: translateX(-50%);
-          display: flex;
-          gap: 8px;
-          background: #fff;
-          padding: 5px 5px;
-          border-radius: 20px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-          margin-bottom: 6px;
-          z-index: 10;
-
-        }
-
-
-
-        .image-message {
-          max-width: 220px;
-          max-height: 220px;
-          border-radius: 8px;
-          margin-top: 4px;
-          display: block;
-          overflow: hidden;
-
-
-          img {
-            width: 100%;
-            border-radius: 8px;
-            display: block;
-            object-fit: cover;
-            max-width: 220px;
-            max-height: 120px;
-          }
-
-          .time {
-            font-size: 11px;
-            color: #ffffff;
-            margin-top: 4px;
-            text-align: right;
-          }
-        }
-
-        .file-message {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: #f1f5f9;
-          padding: 8px 12px;
-          border-radius: 8px;
-          font-size: 14px;
-          color: #1e293b;
-
-          mat-icon {
-            color: #0ea5e9;
-          }
-        }
-
         .time {
           font-size: 11px;
           color: #94a3b8;
           text-align: right;
-          margin-top: 4px;
+          margin-top: 6px;
         }
       }
 
@@ -545,48 +349,27 @@
         margin-left: auto;
         flex-direction: row-reverse;
 
-        .menu-btn {
-          left: -28px;
-          right: auto;
-        }
-
-
-
         .msg-content {
           background-color: #1995BA;
           color: #ffffff;
-
-          .text {
-            background: none;
-            color: #ffffff;
-          }
 
           .time {
             color: #e0f2fe;
           }
 
           .dropdown {
-            left: -20px;
-            right: auto;
-            margin-left: -30px;
-
-            button {
-              color: #1e293b;
-            }
-
-
-            .reaction-picker {
-              left: -20px;
-              right: auto;
-              margin-left: -30px;
-            }
-
-            .reactions-container {
-              left: -20px;
-              right: auto;
-              margin-left: -30px;
-            }
+            right: -10px;
           }
+
+          .reaction-picker {
+            left: 50%;
+            transform: translateX(-50%);
+          }
+        }
+
+        .menu-btn {
+          left: -28px;
+          right: auto;
         }
       }
 
@@ -614,17 +397,12 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 8px 24px;
+      padding: 8px 16px;
       border: 1px solid #cfd2d5;
       background-color: #ffffff;
       border-radius: 8px;
       transition: border-color 0.2s ease;
       width: 80%;
-
-      &:focus-within {
-        border-color: #3b82f6;
-      }
-
 
       input {
         flex: 1;
@@ -638,20 +416,21 @@
       }
     }
 
-    .attachment {
+    .attachment, .emoji {
       position: relative;
+    }
 
-      .attachment-menu {
-        position: absolute;
-        bottom: 50px;
-        left: 0;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        display: flex;
-        flex-direction: column;
-
-        button {
+    .attachment-menu {
+      position: absolute;
+      bottom: 50px;
+      left: 0;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      z-index: 80;
+ button {
           display: flex;
           align-items: center;
           gap: 6px;
@@ -795,40 +574,60 @@
       }
     }
   }
-}
 
 
-//
+/* delete popup override to ensure design & visibility */
+.delete-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 480px;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 9999;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
 
-@media (max-width: 767px) {
-  .chat-window {
+  p {
+    color: #2f3946;
+    font-size: 16px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .delete-btn {
+    display: flex;
+    gap: 12px;
     width: 100%;
-    margin: 0;
-    height: 100%;
-    border-radius: 0;
-  }
+    justify-content: center;
 
-  .chat-messages {
-    padding: 12px;
+    button {
+      min-width: 110px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
 
+    .for-everyone, .for-me {
+      background-color: #1b7f9d;
+      color: #fff;
+    }
 
-  }
-
-  .chat-input-container {
-    padding: 12px;
-
-    .chat-input {
-      width: 100%;
-      padding: 12px;
-
-      .message-input {
-        width: 100%;
-        padding: 12px;
-      }
+    .cancel {
+      background-color: #a3a2a2;
+      color: #000;
     }
   }
 }
 
+/* responsive tweaks */
 @media (min-width: 768px) and (max-width: 1024px) {
   .chat-window {
     grid-area: chat-window;
