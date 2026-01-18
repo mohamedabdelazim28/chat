@@ -1,7 +1,10 @@
 <div class="chat-list">
   <div class="chat-section">
     <div class="header">
-      <h2>Chats</h2>
+      <div class="header-text">
+        <h2>Chats</h2>
+        <p>Recent conversations</p>
+      </div>
     </div>
 
 
@@ -11,7 +14,8 @@
         type="text"
         placeholder="Search..."
         class="search-input"
-        [(ngModel)]="searchTerm" />
+        [(ngModel)]="searchTerm"
+        aria-label="Search conversations" />
       <i class="search-icon"></i>
     </div>
 
@@ -35,7 +39,7 @@
 
 
     <!-- Conversations list -->
-    <div class="conversations" (scroll)="onScroll($event)" style="height:400px; overflow-y:auto;">
+    <div class="conversations" (scroll)="onScroll($event)" style="height:400px; overflow-y:auto;" role="list">
       <div *ngFor="let chat of displayedChats; " class="conversation-item" (click)="selectChat(chat.userId)">
         <ng-container >
         <div class="avatar">

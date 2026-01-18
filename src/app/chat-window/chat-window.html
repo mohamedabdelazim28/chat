@@ -1,24 +1,26 @@
 <div class="chat-window" (click)="closeAllMenus()">
-  <div class="chat-window-header">
-    <button *ngIf="isMobile" class="back-button" (click)="goBackToChatList()" aria-label="Go back to chat list">
-      <mat-icon>keyboard_arrow_left</mat-icon>
-    </button>
-    <div class="contact-info">
-      <div class="contact-avatar">
-        <img src="assets/imges/Avatar.svg" alt="Ronald Richards" />
-      </div>
-      <div class="contact-details">
-        <div class="contact-name"> Ronald Richards </div>
-        <div class="contact-status">Last seen 6:00 pm</div>
+  <header class="chat-window-header">
+    <div class="header-left">
+      <button *ngIf="isMobile" class="back-button" (click)="goBackToChatList()" aria-label="Go back to chat list">
+        <mat-icon>keyboard_arrow_left</mat-icon>
+      </button>
+      <div class="contact-info">
+        <div class="contact-avatar">
+          <img src="assets/imges/Avatar.svg" alt="Ronald Richards" />
+        </div>
+        <div class="contact-details">
+          <div class="contact-name"> Ronald Richards </div>
+          <div class="contact-status">Last seen 6:00 pm</div>
+        </div>
       </div>
     </div>
     <div class="chat-actions">
-      <button class="action-btn"><mat-icon>search</mat-icon></button>
-      <button class="action-btn">⋯</button>
+      <button class="action-btn" aria-label="Search in chat"><mat-icon>search</mat-icon></button>
+      <button class="action-btn" aria-label="More options">⋯</button>
     </div>
-  </div>
+  </header>
 
-  <div class="chat-messages">
+  <div class="chat-messages" role="log" aria-live="polite">
 
     <div class="empty-chat-state" *ngIf="!(messages$ | async)?.length">
       <div class="empty-chat-content">
@@ -35,50 +37,51 @@
         <img [src]="msg.avatar" alt="Avatar" />
       </div>
 
-      <div class="msg-content">
+      <div class="message-body">
+        <div class="msg-content">
+          <div class="deleted-text" *ngIf="msg.deletedForEveryone">
+            This message was deleted for everyone
+          </div>
 
-        <div class="deleted-text" *ngIf="msg.deletedForEveryone">
-          This message was deleted for everyone
-        </div>
+          <div class="deleted-text" *ngIf="msg.deletedForMe">
+            This message was deleted for you
+          </div>
 
-        <div class="deleted-text" *ngIf="msg.deletedForMe">
-          This message was deleted for you
-        </div>
-
-        <div class="text">
-          <ng-container *ngIf="!msg.isEditing; else editTpl">
-            <ng-container *ngIf="msg.type==='text'; else image">
-              {{msg.content}}
+          <div class="text">
+            <ng-container *ngIf="!msg.isEditing; else editTpl">
+              <ng-container *ngIf="msg.type==='text'; else image">
+                {{msg.content}}
+              </ng-container>
             </ng-container>
-          </ng-container>
-          <ng-template #editTpl>
-            <input [(ngModel)]="msg.editBody" class="edit-input" />
-            <div class="edit-actions">
-              <button class="save-btn" (click)="saveEdit(msg)">Save</button>
-              <button class="cancel-btn" (click)="cancelEdit(msg)">Cancel</button>
-            </div>
-          </ng-template>
-          <ng-template #image>
-            <ng-container *ngIf="msg.messageCode;else photo">
-              {{msg.content}}
-              <img [src]="msg.reaction" alt="img" width="40px" height="40px" />
-            </ng-container>
-            <ng-template #photo>
-              <img [src]="msg.content" alt="img" width="40px" height="40px" />
+            <ng-template #editTpl>
+              <input [(ngModel)]="msg.editBody" class="edit-input" />
+              <div class="edit-actions">
+                <button class="save-btn" (click)="saveEdit(msg)">Save</button>
+                <button class="cancel-btn" (click)="cancelEdit(msg)">Cancel</button>
+              </div>
             </ng-template>
-          </ng-template>
+            <ng-template #image>
+              <ng-container *ngIf="msg.messageCode;else photo">
+                {{msg.content}}
+                <img [src]="msg.reaction" alt="img" width="40px" height="40px" />
+              </ng-container>
+              <ng-template #photo>
+                <img [src]="msg.content" alt="img" width="40px" height="40px" />
+              </ng-template>
+            </ng-template>
+          </div>
 
           <div class="createdOn">{{ msg.createdOn | date:'shortTime' }}</div>
         </div>
 
         <!-- <audio controls [src]="msg.body"></audio>
         <div class="createdOn">{{ msg.createdOn | date:'shortTime'}}</div> -->
-      </div>
 
-      <div *ngIf="msg.type === 'file'" class="file-message">
-        <mat-icon>insert_drive_file</mat-icon>
-        <span> {{ msg.content }}</span>
-        <div class="createdOn">{{ msg.createdOn | date:'shortTime' }}</div>
+        <div *ngIf="msg.type === 'file'" class="file-message">
+          <mat-icon>insert_drive_file</mat-icon>
+          <span> {{ msg.content }}</span>
+          <div class="createdOn">{{ msg.createdOn | date:'shortTime' }}</div>
+        </div>
       </div>
 
       <button class="menu-btn" *ngIf="msg.showMenu" (click)="toggleMenu(msg, $event)">⋯</button>
@@ -110,7 +113,7 @@
 
       <div class="reactions-container" *ngIf="msg.reactions">
         <img class="reaction" *ngFor="let r of msg.reactions" [src]="r.iconUrl" [alt]="r.name" width="16"
-          height="16" />wwwqwqwq
+          height="16" />
       </div>
 
     </div>
@@ -146,8 +149,8 @@
     </div>
 
     <div class="chat-input">
-      <input type="text" [(ngModel)]="messageInput" placeholder="Write a message" class="message-input" />
-      <div class="message-input" contenteditable="true" [innerHTML]="safeMessageInput"></div>
+      <input type="text" [(ngModel)]="messageInput" placeholder="Write a message" class="message-input" aria-label="Message" />
+      <div class="message-input" contenteditable="true" [innerHTML]="safeMessageInput" aria-label="Emoji preview"></div>
     </div>
 
 

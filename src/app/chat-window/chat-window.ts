@@ -73,6 +73,7 @@ export class ChatWindowcomponent implements OnInit {
   }
 
   @Input() isMobile: boolean = false;
+  @Input() selectedChatId: string | null = null;
   @Output() backToList = new EventEmitter<void>();
 
   isChatWindowOpen = false;
