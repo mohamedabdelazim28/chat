@@ -1,199 +1,136 @@
-*{
+* {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
 .header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  position: relative;
+  z-index: 10;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 60px;
+
+  .greeting {
     display: flex;
     align-items: center;
-    flex-direction: row;
-    width: 100%;
-    padding: 6px;
-    margin-top: -10px;
-    margin-left: -60px;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    position: relative;
-    z-index: 10;
-    justify-content: space-between;
-    height: 50px;
-    gap: 5px;
-    overflow: hidden;
+    gap: 8px;
 
-
-    .greeting {
+    .greeting-icon {
+      width: 32px;
+      height: 32px;
+      background-color: #f59e0b;
+      border-radius: 10px;
       display: flex;
       align-items: center;
-      margin-bottom: 16px;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+
+    span {
+      font-size: 14px;
+      color: #0f172a;
+    }
+  }
+
+  .search-container {
+    position: relative;
+    flex: 1;
+    max-width: 640px;
+
+    .search-input {
+      width: 100%;
+      padding: 10px 12px 10px 36px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 13px;
+      background: #f8fafc;
+
+      &:focus {
+        border-color: #2563eb;
+        background: #ffffff;
+      }
+
+      &::placeholder {
+        color: #94a3b8;
+        font-size: 12px;
+      }
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      width: 16px;
+      height: 16px;
+      color: #94a3b8;
+    }
+  }
+
+  .icons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+
+    .plus-icon,
+    .messages-icon,
+    .notifications-icon,
+    .settings-icon {
+      font-size: 20px;
+      color: #475569;
+    }
+
+    .plus-icon:hover,
+    .messages-icon:hover,
+    .notifications-icon:hover,
+    .settings-icon:hover {
+      color: #2563eb;
+      cursor: pointer;
+    }
+  }
+}
+
+@media (max-width: 1024px) {
+  .header {
+    height: 60px;
+    width: 100%;
+    border-bottom: 1px solid #e5e5e5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+
+    .greeting {
+      gap: 6px;
 
       .greeting-icon {
-        width: 32px;
-        height: 32px;
-        background-color: #ff9800;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: bold;
-        margin-right: 8px;
+        width: 28px;
+        height: 28px;
+        font-size: 0.85rem;
       }
 
       span {
-        font-size: 16px;
-        color: #333;
+        font-size: 0.7rem;
       }
     }
 
     .search-container {
-      position: relative;
+      flex: 1;
 
       .search-input {
-        width: 646px;
-        padding: 14px;
-        border: 1px solid #e0e0e0;
-        border-radius: 10px;
-        font-size: 12px;
-        letter-spacing: -0.41px;
-
-        .search-input:focus {
-          border-color: #1976d2;
-        }
-
-        &::placeholder {
-          color: #88888C;
-          font-size: 12px;
-          letter-spacing: -0.41px;
-          padding-left: 20px;
-        }
-
-      }
-
-      .search-icon {
-        position: absolute;
-        left: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        cursor: pointer;
-        width: 16px;
-        height: 16px;
-        color: #88888C;
-      }
-    }
-
-
-
-    .icons {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      justify-content: center;
-      width: 190px;
-
-      .plus-icon,
-      .messages-icon,
-      .notifications-icon,
-      .settings-icon {
-        font-size: 20px;
-        color: #092E40;
-      }
-
-      & .plus-icon:hover,
-      & .messages-icon:hover,
-      & .notifications-icon:hover,
-      & .settings-icon:hover {
-        color: #1976d2;
-        cursor: pointer;
+        height: 2rem;
       }
     }
   }
-
-  .navbar {
-  grid-area: navbar;
-  height: 60px;
-  border-bottom: 1px solid #e5e5e5;
-  display: flex;
-  align-items: center;
-  padding: 0 1rem;
-
-  .search-container {
-    flex: 1;
-    display: flex;
-    align-items: center;
-
-    .search-icon {
-      margin-right: 0.5rem;
-    }
-
-    .search-input {
-      flex: 1;
-      height: 2.5rem;
-      border: none;
-      border-radius: 0.25rem;
-      padding: 0.5rem;
-    }
-  }
-
-}
-
-@media (max-width: 1024px) {
-
-
-.header {
-  grid-area: navbar;
-  height: 60px;
-  width: 100%;
-  border-bottom: 1px solid #e5e5e5;
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  padding: 0 1rem;
-  margin-left: -100px;
-
-  .greeting {
-    width: 15px;
-    height: 15px;
-    margin-right: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    z-index: 2;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    top: 5px;
-    right: -5px;
-
-    .greeting-icon {
-      font-size: 1rem;
-      width: 100%;
-      height: 100%;
-    }
-
-    span {
-      font-size: 0.5rem;
-      color: #333;
-    }
-  }
-  .search-container {
-    flex: 1;
-    display: flex;
-    align-items: center;
-
-    .search-icon {
-      margin-right: 0.5rem;
-      display: flex;
-      align-items: center;
-      width: 20px;
-    }
-
-    .search-input {
-      flex: 1;
-      height: 1rem;
-
-    }
-  }
-
-}
-
 }
